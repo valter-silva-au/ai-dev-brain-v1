@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.os }}
           path: coverage.out
@@ -134,7 +134,7 @@ jobs:
             ./cmd/adb/
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: adb-${{ matrix.goos }}-${{ matrix.goarch }}
           path: adb-*

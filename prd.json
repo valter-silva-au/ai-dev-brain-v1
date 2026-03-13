@@ -356,7 +356,7 @@
         "MCP check validates server health",
         "go test ./... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-016"
       ]

@@ -372,7 +372,7 @@
         "go test ./... -run TestProperty passes",
         "go test ./... -count=1 passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-017",
         "TASK-018",

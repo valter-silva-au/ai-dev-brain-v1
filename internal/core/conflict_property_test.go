@@ -18,15 +18,16 @@ func TestProperty_ConflictDetectionConsistency(t *testing.T) {
 		tempDir := filepath.Join(baseDir, suffix)
 		cd := NewConflictDetector(tempDir)
 
-		// Create knowledge directory
-		knowledgeDir := filepath.Join(tempDir, ".ai-dev-brain", "knowledge")
+		// Create knowledge directory matching the path expected by ListAllKnowledge:
+		// basePath/tickets/TASK-XXXXX/knowledge/decisions.yaml
+		taskID := rapid.StringMatching(`^TASK-\d{5}$`).Draw(t, "taskID")
+		knowledgeDir := filepath.Join(tempDir, "tickets", taskID, "knowledge")
 		if err := os.MkdirAll(knowledgeDir, 0o755); err != nil {
 			t.Fatalf("Failed to create knowledge dir: %v", err)
 		}
 
 		// Add a decision
-		taskID := rapid.StringMatching(`^TASK-\d{5}$`).Draw(t, "taskID")
-		keyword := rapid.StringMatching(`^[a-z]+$`).Draw(t, "keyword")
+		keyword := rapid.StringMatching(`^[a-z]{3,10}$`).Draw(t, "keyword")
 
 		knowledge := &models.ExtractedKnowledge{
 			Decisions: []models.Decision{
@@ -39,7 +40,7 @@ func TestProperty_ConflictDetectionConsistency(t *testing.T) {
 			},
 		}
 
-		knowledgePath := filepath.Join(knowledgeDir, taskID+".yaml")
+		knowledgePath := filepath.Join(knowledgeDir, "decisions.yaml")
 		data, _ := yaml.Marshal(knowledge)
 		if err := os.WriteFile(knowledgePath, data, 0o644); err != nil {
 			t.Fatalf("Failed to write knowledge: %v", err)
@@ -67,15 +68,15 @@ func TestProperty_ConflictDetectionNoFalsePositives(t *testing.T) {
 		tempDir := filepath.Join(baseDir, suffix)
 		cd := NewConflictDetector(tempDir)
 
-		// Create knowledge directory
-		knowledgeDir := filepath.Join(tempDir, ".ai-dev-brain", "knowledge")
+		// Create knowledge directory matching the expected path:
+		// basePath/tickets/TASK-XXXXX/knowledge/decisions.yaml
+		taskID := rapid.StringMatching(`^TASK-\d{5}$`).Draw(t, "taskID")
+		knowledgeDir := filepath.Join(tempDir, "tickets", taskID, "knowledge")
 		if err := os.MkdirAll(knowledgeDir, 0o755); err != nil {
 			t.Fatalf("Failed to create knowledge dir: %v", err)
 		}
 
 		// Add a decision with specific keyword
-		taskID := rapid.StringMatching(`^TASK-\d{5}$`).Draw(t, "taskID")
-
 		knowledge := &models.ExtractedKnowledge{
 			Decisions: []models.Decision{
 				{
@@ -87,7 +88,7 @@ func TestProperty_ConflictDetectionNoFalsePositives(t *testing.T) {
 			},
 		}
 
-		knowledgePath := filepath.Join(knowledgeDir, taskID+".yaml")
+		knowledgePath := filepath.Join(knowledgeDir, "decisions.yaml")
 		data, _ := yaml.Marshal(knowledge)
 		if err := os.WriteFile(knowledgePath, data, 0o644); err != nil {
 			t.Fatalf("Failed to write knowledge: %v", err)

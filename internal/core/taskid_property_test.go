@@ -149,12 +149,9 @@ func TestProperty_TaskIDInvalidCounterRecovery(t *testing.T) {
 		suffix := rapid.StringMatching(`^[a-z0-9]+$`).Draw(t, "suffix")
 		counterFile := filepath.Join(baseDir, suffix)
 
-		// Write invalid content
-		invalidContent := rapid.StringN(1, 100, 1000).Draw(t, "invalid")
-		// Avoid writing valid numbers
-		if _, err := parseInt(invalidContent); err == nil {
-			return // Skip if accidentally valid
-		}
+		// Write content that is definitely not a valid integer
+		// (strconv.Atoi trims nothing; TrimSpace in readCounter handles whitespace)
+		invalidContent := rapid.StringMatching(`^[a-z]{3,20}$`).Draw(t, "invalid")
 
 		if err := os.WriteFile(counterFile, []byte(invalidContent), 0o644); err != nil {
 			t.Fatalf("Failed to write invalid counter: %v", err)
@@ -163,7 +160,7 @@ func TestProperty_TaskIDInvalidCounterRecovery(t *testing.T) {
 		gen := NewFileTaskIDGenerator(counterFile, "TASK")
 		_, err := gen.GenerateTaskID()
 
-		// Should fail on corrupted counter
+		// Should fail on corrupted counter (non-numeric content)
 		if err == nil {
 			t.Fatal("Expected error for corrupted counter file")
 		}

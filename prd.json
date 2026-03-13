@@ -340,7 +340,7 @@
         "Screenshot pipeline supports Linux, macOS, Windows",
         "go test ./... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-016"
       ]

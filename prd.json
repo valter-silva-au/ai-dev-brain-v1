@@ -96,7 +96,7 @@
         "DefaultHookConfig() returns sensible defaults",
         "go test ./internal/core/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

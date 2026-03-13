@@ -181,7 +181,7 @@
         "internal/integration/mcpclient.go checks MCP server health with cache",
         "go test ./internal/integration/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

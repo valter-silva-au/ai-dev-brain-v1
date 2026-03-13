@@ -237,7 +237,7 @@
         "Sets CLI package-level variables",
         "go test ./internal/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-013",
         "TASK-010",

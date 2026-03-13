@@ -309,7 +309,7 @@
         "Handles missing files gracefully",
         "go test ./internal/core/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-013"
       ]

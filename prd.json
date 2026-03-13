@@ -30,8 +30,10 @@
         "Tests use t.TempDir() for isolation",
         "go test ./internal/storage/... passes"
       ],
-      "status": "pending",
-      "dependencies": ["TASK-001"]
+      "status": "done",
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-003",
@@ -45,7 +47,9 @@
         "go test ./internal/storage/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-004",
@@ -58,7 +62,9 @@
         "go test ./internal/storage/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-005",
@@ -74,7 +80,9 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-006",
@@ -89,7 +97,9 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-007",
@@ -103,7 +113,9 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-008",
@@ -118,7 +130,11 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-005", "TASK-006", "TASK-007"]
+      "dependencies": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ]
     },
     {
       "id": "TASK-009",
@@ -132,7 +148,9 @@
         "go test ./internal/integration/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-010",
@@ -146,7 +164,10 @@
         "go test ./internal/integration/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001", "TASK-006"]
+      "dependencies": [
+        "TASK-001",
+        "TASK-006"
+      ]
     },
     {
       "id": "TASK-011",
@@ -161,7 +182,9 @@
         "go test ./internal/integration/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-012",
@@ -176,7 +199,9 @@
         "go test ./internal/observability/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-001"]
+      "dependencies": [
+        "TASK-001"
+      ]
     },
     {
       "id": "TASK-013",
@@ -191,7 +216,14 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-002", "TASK-003", "TASK-005", "TASK-008", "TASK-009", "TASK-012"]
+      "dependencies": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-005",
+        "TASK-008",
+        "TASK-009",
+        "TASK-012"
+      ]
     },
     {
       "id": "TASK-014",
@@ -206,7 +238,11 @@
         "go test ./internal/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-013", "TASK-010", "TASK-011"]
+      "dependencies": [
+        "TASK-013",
+        "TASK-010",
+        "TASK-011"
+      ]
     },
     {
       "id": "TASK-015",
@@ -221,7 +257,9 @@
         "go test ./internal/cli/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-014"]
+      "dependencies": [
+        "TASK-014"
+      ]
     },
     {
       "id": "TASK-016",
@@ -237,7 +275,9 @@
         "go test ./internal/cli/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-015"]
+      "dependencies": [
+        "TASK-015"
+      ]
     },
     {
       "id": "TASK-017",
@@ -254,7 +294,9 @@
         "go test ./... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-015"]
+      "dependencies": [
+        "TASK-015"
+      ]
     },
     {
       "id": "TASK-018",
@@ -268,7 +310,9 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-013"]
+      "dependencies": [
+        "TASK-013"
+      ]
     },
     {
       "id": "TASK-019",
@@ -281,7 +325,9 @@
         "go test ./internal/core/... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-013"]
+      "dependencies": [
+        "TASK-013"
+      ]
     },
     {
       "id": "TASK-020",
@@ -295,7 +341,9 @@
         "go test ./... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-016"]
+      "dependencies": [
+        "TASK-016"
+      ]
     },
     {
       "id": "TASK-021",
@@ -309,7 +357,9 @@
         "go test ./... passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-016"]
+      "dependencies": [
+        "TASK-016"
+      ]
     },
     {
       "id": "TASK-022",
@@ -323,7 +373,11 @@
         "go test ./... -count=1 passes"
       ],
       "status": "pending",
-      "dependencies": ["TASK-017", "TASK-018", "TASK-019"]
+      "dependencies": [
+        "TASK-017",
+        "TASK-018",
+        "TASK-019"
+      ]
     },
     {
       "id": "TASK-023",
@@ -338,7 +392,11 @@
         "make build succeeds"
       ],
       "status": "pending",
-      "dependencies": ["TASK-020", "TASK-021", "TASK-022"]
+      "dependencies": [
+        "TASK-020",
+        "TASK-021",
+        "TASK-022"
+      ]
     }
   ]
 }

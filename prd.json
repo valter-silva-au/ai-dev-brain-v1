@@ -112,7 +112,7 @@
         "Uses path.Join for embed.FS paths",
         "go test ./internal/core/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

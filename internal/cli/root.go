@@ -26,6 +26,7 @@ that integrates with git worktrees, Claude Code, and terminal environments.`,
 	rootCmd.AddCommand(NewMetricsCmd())
 	rootCmd.AddCommand(NewAlertsCmd())
 	rootCmd.AddCommand(NewDashboardCmd())
+	rootCmd.AddCommand(NewHookCmd())
 	rootCmd.AddCommand(NewVersionCmd())
 
 	return rootCmd

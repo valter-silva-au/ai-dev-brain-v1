@@ -193,11 +193,11 @@ func TestCreateWorktreeEmptyParams(t *testing.T) {
 	manager := NewGitWorktreeManager("")
 
 	tests := []struct {
-		name       string
-		taskID     string
-		repoPath   string
-		baseBranch string
-		wantErr    bool
+		name        string
+		taskID      string
+		repoPath    string
+		baseBranch  string
+		wantErr     bool
 		errContains string
 	}{
 		{

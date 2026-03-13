@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/valter-silva-au/ai-dev-brain/pkg/models"
-	"pgregory.net/rapid"
 	"gopkg.in/yaml.v3"
+	"pgregory.net/rapid"
 )
 
 // TestProperty_ConflictDetectionConsistency verifies conflict detection consistency

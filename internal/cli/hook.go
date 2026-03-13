@@ -50,11 +50,11 @@ func newHookInstallCmd() *cobra.Command {
 
 			// Install each hook wrapper
 			hooks := map[string]string{
-				"adb-hook-pre-tool-use.sh":    preToolUseScript,
-				"adb-hook-post-tool-use.sh":   postToolUseScript,
-				"adb-hook-stop.sh":            stopScript,
-				"adb-hook-task-completed.sh":  taskCompletedScript,
-				"adb-hook-session-end.sh":     sessionEndScript,
+				"adb-hook-pre-tool-use.sh":   preToolUseScript,
+				"adb-hook-post-tool-use.sh":  postToolUseScript,
+				"adb-hook-stop.sh":           stopScript,
+				"adb-hook-task-completed.sh": taskCompletedScript,
+				"adb-hook-session-end.sh":    sessionEndScript,
 			}
 
 			for filename, content := range hooks {

@@ -212,11 +212,11 @@ func TestNewHandoffDocument(t *testing.T) {
 
 func TestDecision_YAMLSerialization(t *testing.T) {
 	decision := &Decision{
-		ID:          "D-001",
-		Title:       "Use PostgreSQL",
-		Description: "Database choice for the project",
-		Context:     "Need a relational database",
-		Rationale:   "Strong ACID guarantees",
+		ID:           "D-001",
+		Title:        "Use PostgreSQL",
+		Description:  "Database choice for the project",
+		Context:      "Need a relational database",
+		Rationale:    "Strong ACID guarantees",
 		Alternatives: []string{"MySQL", "MongoDB"},
 		Consequences: []string{"Need to manage migrations"},
 		Status:       "accepted",
@@ -309,12 +309,12 @@ func TestExtractedKnowledge_YAMLSerialization(t *testing.T) {
 
 func TestHandoffDocument_YAMLSerialization(t *testing.T) {
 	handoff := &HandoffDocument{
-		TaskID:      "TASK-001",
-		TaskTitle:   "Implement feature X",
-		GeneratedAt: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
-		Summary:     "Completed feature X implementation",
-		Objectives:  []string{"Objective 1", "Objective 2"},
-		Completed:   []string{"Item 1", "Item 2"},
+		TaskID:       "TASK-001",
+		TaskTitle:    "Implement feature X",
+		GeneratedAt:  time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
+		Summary:      "Completed feature X implementation",
+		Objectives:   []string{"Objective 1", "Objective 2"},
+		Completed:    []string{"Item 1", "Item 2"},
 		NotCompleted: []string{"Item 3"},
 		Decisions: []Decision{
 			{
@@ -336,12 +336,12 @@ func TestHandoffDocument_YAMLSerialization(t *testing.T) {
 				Timestamp: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 			},
 		},
-		OpenItems:     []string{"Open 1"},
-		NextSteps:     []string{"Step 1"},
-		References:    []string{"ref1.md"},
-		FilesModified: []string{"file.go"},
-		TestsAdded:    []string{"test.go"},
-		Dependencies:  []string{"TASK-002"},
+		OpenItems:      []string{"Open 1"},
+		NextSteps:      []string{"Step 1"},
+		References:     []string{"ref1.md"},
+		FilesModified:  []string{"file.go"},
+		TestsAdded:     []string{"test.go"},
+		Dependencies:   []string{"TASK-002"},
 		ArchivedReason: "Feature completed",
 		Owner:          "user@example.com",
 		Reviewers:      []string{"reviewer1", "reviewer2"},

@@ -391,7 +391,7 @@
         ".github/workflows/ci.yml runs tests and lint on push",
         "make build succeeds"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-020",
         "TASK-021",

@@ -56,10 +56,10 @@ func TestConflictDetector_CheckProposedChanges(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		changes        []string
-		wantConflicts  bool
-		minConflicts   int
+		name          string
+		changes       []string
+		wantConflicts bool
+		minConflicts  int
 	}{
 		{
 			name:          "No conflicts",
@@ -356,28 +356,28 @@ func TestConflictDetector_HasConflict(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		change      string
+		name         string
+		change       string
 		wantConflict bool
 	}{
 		{
-			name:        "Exact match in change",
-			change:      "Update PostgreSQL configuration",
+			name:         "Exact match in change",
+			change:       "Update PostgreSQL configuration",
 			wantConflict: true,
 		},
 		{
-			name:        "Partial match (case insensitive)",
-			change:      "Fix postgresql connection issue",
+			name:         "Partial match (case insensitive)",
+			change:       "Fix postgresql connection issue",
 			wantConflict: true,
 		},
 		{
-			name:        "Match with tag",
-			change:      "Refactor database layer",
+			name:         "Match with tag",
+			change:       "Refactor database layer",
 			wantConflict: true,
 		},
 		{
-			name:        "No match",
-			change:      "Update frontend components",
+			name:         "No match",
+			change:       "Update frontend components",
 			wantConflict: false,
 		},
 	}
@@ -402,23 +402,23 @@ func TestConflictDetector_HasADRConflict(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		change      string
+		name         string
+		change       string
 		wantConflict bool
 	}{
 		{
-			name:        "Match with title",
-			change:      "Migrate REST API to gRPC",
+			name:         "Match with title",
+			change:       "Migrate REST API to gRPC",
 			wantConflict: true,
 		},
 		{
-			name:        "Match with context",
-			change:      "Implement GraphQL endpoint",
+			name:         "Match with context",
+			change:       "Implement GraphQL endpoint",
 			wantConflict: true,
 		},
 		{
-			name:        "No match",
-			change:      "Update documentation",
+			name:         "No match",
+			change:       "Update documentation",
 			wantConflict: false,
 		},
 	}

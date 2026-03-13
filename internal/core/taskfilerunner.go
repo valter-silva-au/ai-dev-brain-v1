@@ -21,17 +21,17 @@ type TaskfileRunner interface {
 
 // Taskfile represents a Taskfile.yml structure
 type Taskfile struct {
-	Version string            `yaml:"version"`
-	Tasks   map[string]Task   `yaml:"tasks"`
+	Version string          `yaml:"version"`
+	Tasks   map[string]Task `yaml:"tasks"`
 }
 
 // Task represents a task definition in Taskfile
 type Task struct {
-	Desc     string   `yaml:"desc"`
-	Cmds     []string `yaml:"cmds"`
-	Deps     []string `yaml:"deps,omitempty"`
-	Dir      string   `yaml:"dir,omitempty"`
-	Env      map[string]string `yaml:"env,omitempty"`
+	Desc string            `yaml:"desc"`
+	Cmds []string          `yaml:"cmds"`
+	Deps []string          `yaml:"deps,omitempty"`
+	Dir  string            `yaml:"dir,omitempty"`
+	Env  map[string]string `yaml:"env,omitempty"`
 }
 
 // DefaultTaskfileRunner implements TaskfileRunner

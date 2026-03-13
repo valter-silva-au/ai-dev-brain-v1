@@ -25,7 +25,7 @@ func NewExecCmd() *cobra.Command {
 
 			// Create CLI executor with empty aliases and task env
 			taskEnv := integration.TaskEnv{
-				TaskID:       "",  // Could be detected from current directory
+				TaskID:       "", // Could be detected from current directory
 				Branch:       "",
 				WorktreePath: App.BasePath,
 				TicketPath:   "",

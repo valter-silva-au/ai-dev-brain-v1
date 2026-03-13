@@ -106,16 +106,16 @@ func TestRenderDesign(t *testing.T) {
 	}
 
 	data := map[string]interface{}{
-		"Title":               "Test Design",
-		"TaskID":              "TASK-00002",
-		"CreatedAt":           "2026-03-13",
-		"Overview":            "Design overview",
-		"Components":          "Component A, Component B",
-		"DataFlow":            "Data flows from A to B",
-		"Dependencies":        []string{"Dependency 1", "Dependency 2"},
-		"ImplementationPlan":  "Step 1, Step 2",
-		"TechnicalDecisions":  "Decision 1",
-		"OpenQuestions":       "Question 1?",
+		"Title":              "Test Design",
+		"TaskID":             "TASK-00002",
+		"CreatedAt":          "2026-03-13",
+		"Overview":           "Design overview",
+		"Components":         "Component A, Component B",
+		"DataFlow":           "Data flows from A to B",
+		"Dependencies":       []string{"Dependency 1", "Dependency 2"},
+		"ImplementationPlan": "Step 1, Step 2",
+		"TechnicalDecisions": "Decision 1",
+		"OpenQuestions":      "Question 1?",
 	}
 
 	result, err := tm.Render(TemplateTypeDesign, data)
@@ -151,16 +151,16 @@ func TestRenderDesignWithNoDependencies(t *testing.T) {
 	}
 
 	data := map[string]interface{}{
-		"Title":               "Test Design",
-		"TaskID":              "TASK-00002",
-		"CreatedAt":           "2026-03-13",
-		"Overview":            "Design overview",
-		"Components":          "Component A",
-		"DataFlow":            "Simple flow",
-		"Dependencies":        []string{},
-		"ImplementationPlan":  "Step 1",
-		"TechnicalDecisions":  "Decision 1",
-		"OpenQuestions":       "",
+		"Title":              "Test Design",
+		"TaskID":             "TASK-00002",
+		"CreatedAt":          "2026-03-13",
+		"Overview":           "Design overview",
+		"Components":         "Component A",
+		"DataFlow":           "Simple flow",
+		"Dependencies":       []string{},
+		"ImplementationPlan": "Step 1",
+		"TechnicalDecisions": "Decision 1",
+		"OpenQuestions":      "",
 	}
 
 	result, err := tm.Render(TemplateTypeDesign, data)

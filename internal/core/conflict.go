@@ -21,14 +21,14 @@ type Conflict struct {
 
 // ConflictDetector checks proposed changes against existing ADRs and decisions
 type ConflictDetector struct {
-	basePath          string
+	basePath           string
 	knowledgeExtractor *KnowledgeExtractor
 }
 
 // NewConflictDetector creates a new conflict detector
 func NewConflictDetector(basePath string) *ConflictDetector {
 	return &ConflictDetector{
-		basePath:          basePath,
+		basePath:           basePath,
 		knowledgeExtractor: NewKnowledgeExtractor(basePath),
 	}
 }

@@ -16,28 +16,28 @@ import (
 // It wires all subsystems together using the adapter pattern to prevent circular imports
 type App struct {
 	// ===== Configuration =====
-	BasePath           string
-	ConfigManager      core.ConfigurationManager
-	MergedConfig       *models.MergedConfig
+	BasePath      string
+	ConfigManager core.ConfigurationManager
+	MergedConfig  *models.MergedConfig
 
 	// ===== Storage =====
-	BacklogManager     storage.BacklogManager
-	ContextManager     storage.ContextManager
+	BacklogManager      storage.BacklogManager
+	ContextManager      storage.ContextManager
 	SessionStoreManager storage.SessionStoreManager
 
 	// ===== Core Services =====
-	TaskIDGenerator    core.TaskIDGenerator
-	TemplateManager    core.TemplateManager
-	TaskManager        *core.TaskManager
+	TaskIDGenerator core.TaskIDGenerator
+	TemplateManager core.TemplateManager
+	TaskManager     *core.TaskManager
 
 	// ===== Integration =====
-	GitWorktreeManager integration.GitWorktreeManager
+	GitWorktreeManager  integration.GitWorktreeManager
 	TerminalStateWriter integration.TerminalStateWriter
 
 	// ===== Observability =====
-	EventLog           *observability.EventLog
-	MetricsCalculator  *observability.MetricsCalculator
-	AlertEvaluator     *observability.AlertEvaluator
+	EventLog          *observability.EventLog
+	MetricsCalculator *observability.MetricsCalculator
+	AlertEvaluator    *observability.AlertEvaluator
 }
 
 // Adapters bridge core interfaces to real implementations

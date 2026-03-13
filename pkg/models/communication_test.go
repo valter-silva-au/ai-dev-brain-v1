@@ -49,32 +49,32 @@ func TestNewCommunication(t *testing.T) {
 
 func TestCommunication_AddTag(t *testing.T) {
 	tests := []struct {
-		name         string
-		initialTags  []CommunicationTag
-		addTag       CommunicationTag
-		expectedLen  int
-		shouldAdd    bool
+		name        string
+		initialTags []CommunicationTag
+		addTag      CommunicationTag
+		expectedLen int
+		shouldAdd   bool
 	}{
 		{
-			name:         "add new tag",
-			initialTags:  []CommunicationTag{},
-			addTag:       CommunicationTagQuestion,
-			expectedLen:  1,
-			shouldAdd:    true,
+			name:        "add new tag",
+			initialTags: []CommunicationTag{},
+			addTag:      CommunicationTagQuestion,
+			expectedLen: 1,
+			shouldAdd:   true,
 		},
 		{
-			name:         "add duplicate tag",
-			initialTags:  []CommunicationTag{CommunicationTagQuestion},
-			addTag:       CommunicationTagQuestion,
-			expectedLen:  1,
-			shouldAdd:    false,
+			name:        "add duplicate tag",
+			initialTags: []CommunicationTag{CommunicationTagQuestion},
+			addTag:      CommunicationTagQuestion,
+			expectedLen: 1,
+			shouldAdd:   false,
 		},
 		{
-			name:         "add different tag",
-			initialTags:  []CommunicationTag{CommunicationTagQuestion},
-			addTag:       CommunicationTagAnswer,
-			expectedLen:  2,
-			shouldAdd:    true,
+			name:        "add different tag",
+			initialTags: []CommunicationTag{CommunicationTagQuestion},
+			addTag:      CommunicationTagAnswer,
+			expectedLen: 2,
+			shouldAdd:   true,
 		},
 	}
 
@@ -285,17 +285,17 @@ func TestCommunicationTag_Constants(t *testing.T) {
 
 func TestCommunication_YAMLSerialization(t *testing.T) {
 	comm := &Communication{
-		ID:      "C-001",
-		TaskID:  "TASK-001",
-		Date:    time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
-		From:    "user@example.com",
-		To:      []string{"team@example.com"},
-		Subject: "Test Subject",
-		Content: "Test content",
-		Tags:    []CommunicationTag{CommunicationTagQuestion, CommunicationTagEmail},
-		Channel: "email",
-		ThreadID: "thread-123",
-		References: []string{"C-000"},
+		ID:          "C-001",
+		TaskID:      "TASK-001",
+		Date:        time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
+		From:        "user@example.com",
+		To:          []string{"team@example.com"},
+		Subject:     "Test Subject",
+		Content:     "Test content",
+		Tags:        []CommunicationTag{CommunicationTagQuestion, CommunicationTagEmail},
+		Channel:     "email",
+		ThreadID:    "thread-123",
+		References:  []string{"C-000"},
 		Attachments: []string{"file.pdf"},
 		ActionItems: []ActionItem{
 			{

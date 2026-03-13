@@ -90,7 +90,6 @@ func TestNewApp_EmptyBasePath(t *testing.T) {
 	}
 }
 
-
 func TestApp_Integration_ConfigurationLoading(t *testing.T) {
 	tmpDir := t.TempDir()
 

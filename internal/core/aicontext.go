@@ -490,16 +490,16 @@ func (g *DefaultAIContextGenerator) generateWhatsChanged(prevHashes, currentHash
 
 	// Check each section for changes
 	sectionNames := map[string]string{
-		"overview":            "Project Overview",
-		"directory":           "Directory Structure",
-		"conventions":         "Conventions",
-		"glossary":            "Glossary",
-		"decisions":           "Architectural Decisions",
-		"active_tasks":        "Active Tasks",
-		"critical_decisions":  "Critical Decisions",
-		"recent_sessions":     "Recent Sessions",
-		"captured_sessions":   "Captured Sessions",
-		"stakeholders":        "Stakeholders & Contacts",
+		"overview":           "Project Overview",
+		"directory":          "Directory Structure",
+		"conventions":        "Conventions",
+		"glossary":           "Glossary",
+		"decisions":          "Architectural Decisions",
+		"active_tasks":       "Active Tasks",
+		"critical_decisions": "Critical Decisions",
+		"recent_sessions":    "Recent Sessions",
+		"captured_sessions":  "Captured Sessions",
+		"stakeholders":       "Stakeholders & Contacts",
 	}
 
 	for key, name := range sectionNames {

@@ -26,20 +26,20 @@ const (
 
 // Alert represents a triggered alert
 type Alert struct {
-	Type      AlertType     `json:"type"`
-	Severity  AlertSeverity `json:"severity"`
-	Message   string        `json:"message"`
-	TaskID    string        `json:"task_id,omitempty"`
-	Timestamp time.Time     `json:"timestamp"`
+	Type      AlertType              `json:"type"`
+	Severity  AlertSeverity          `json:"severity"`
+	Message   string                 `json:"message"`
+	TaskID    string                 `json:"task_id,omitempty"`
+	Timestamp time.Time              `json:"timestamp"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // AlertThreshold represents a threshold configuration for an alert
 type AlertThreshold struct {
-	Type      AlertType     `json:"type"`
-	Severity  AlertSeverity `json:"severity"`
-	Duration  time.Duration `json:"duration,omitempty"`  // for time-based thresholds
-	Count     int           `json:"count,omitempty"`     // for count-based thresholds
+	Type     AlertType     `json:"type"`
+	Severity AlertSeverity `json:"severity"`
+	Duration time.Duration `json:"duration,omitempty"` // for time-based thresholds
+	Count    int           `json:"count,omitempty"`    // for count-based thresholds
 }
 
 // AlertConfig holds all alert threshold configurations
@@ -99,8 +99,8 @@ func (ac *AlertConfig) SetThreshold(threshold AlertThreshold) {
 
 // AlertEvaluator evaluates alert conditions against thresholds
 type AlertEvaluator struct {
-	config           *AlertConfig
-	metricsCalc      *MetricsCalculator
+	config      *AlertConfig
+	metricsCalc *MetricsCalculator
 }
 
 // NewAlertEvaluator creates a new alert evaluator

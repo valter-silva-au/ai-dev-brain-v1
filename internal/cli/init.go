@@ -259,11 +259,11 @@ func newInitClaudeCmd() *cobra.Command {
 // newInitProjectCmd creates the 'init project' command using ProjectInitializer
 func newInitProjectCmd() *cobra.Command {
 	var (
-		name       string
-		ai         string
-		prefix     string
-		gitInit    bool
-		withBMAD   bool
+		name     string
+		ai       string
+		prefix   string
+		gitInit  bool
+		withBMAD bool
 	)
 
 	cmd := &cobra.Command{

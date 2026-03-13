@@ -42,8 +42,8 @@ func NewMetricsCmd() *cobra.Command {
 				if metrics.LastEventTimestamp.Before(cutoff) {
 					// No events in the requested time window
 					metrics = &observability.Metrics{
-						TasksByStatus: make(map[string]int),
-						TasksByType:   make(map[string]int),
+						TasksByStatus:     make(map[string]int),
+						TasksByType:       make(map[string]int),
 						TaskStatusHistory: make(map[string][]observability.StatusChange),
 					}
 				}

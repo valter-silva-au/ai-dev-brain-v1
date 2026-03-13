@@ -4,18 +4,18 @@ import "time"
 
 // Decision represents a decision made during a task
 type Decision struct {
-	ID          string    `yaml:"id"`
-	Title       string    `yaml:"title"`
-	Description string    `yaml:"description"`
-	Context     string    `yaml:"context,omitempty"`
-	Rationale   string    `yaml:"rationale,omitempty"`
-	Alternatives []string `yaml:"alternatives,omitempty"`
-	Consequences []string `yaml:"consequences,omitempty"`
-	Status      string    `yaml:"status"` // proposed, accepted, rejected, deprecated
-	DecidedBy   string    `yaml:"decided_by,omitempty"`
-	DecidedAt   time.Time `yaml:"decided_at"`
-	Tags        []string  `yaml:"tags,omitempty"`
-	RelatedTo   []string  `yaml:"related_to,omitempty"` // related task IDs or decision IDs
+	ID           string    `yaml:"id"`
+	Title        string    `yaml:"title"`
+	Description  string    `yaml:"description"`
+	Context      string    `yaml:"context,omitempty"`
+	Rationale    string    `yaml:"rationale,omitempty"`
+	Alternatives []string  `yaml:"alternatives,omitempty"`
+	Consequences []string  `yaml:"consequences,omitempty"`
+	Status       string    `yaml:"status"` // proposed, accepted, rejected, deprecated
+	DecidedBy    string    `yaml:"decided_by,omitempty"`
+	DecidedAt    time.Time `yaml:"decided_at"`
+	Tags         []string  `yaml:"tags,omitempty"`
+	RelatedTo    []string  `yaml:"related_to,omitempty"` // related task IDs or decision IDs
 }
 
 // ExtractedKnowledge represents knowledge extracted from a completed task
@@ -51,25 +51,25 @@ type Gotcha struct {
 
 // HandoffDocument represents a handoff document for an archived task
 type HandoffDocument struct {
-	TaskID          string     `yaml:"task_id"`
-	TaskTitle       string     `yaml:"task_title"`
-	GeneratedAt     time.Time  `yaml:"generated_at"`
-	Summary         string     `yaml:"summary"`
-	Objectives      []string   `yaml:"objectives,omitempty"`
-	Completed       []string   `yaml:"completed,omitempty"`
-	NotCompleted    []string   `yaml:"not_completed,omitempty"`
-	Decisions       []Decision `yaml:"decisions,omitempty"`
-	KeyLearnings    []Learning `yaml:"key_learnings,omitempty"`
-	Gotchas         []Gotcha   `yaml:"gotchas,omitempty"`
-	OpenItems       []string   `yaml:"open_items,omitempty"`
-	NextSteps       []string   `yaml:"next_steps,omitempty"`
-	References      []string   `yaml:"references,omitempty"`
-	FilesModified   []string   `yaml:"files_modified,omitempty"`
-	TestsAdded      []string   `yaml:"tests_added,omitempty"`
-	Dependencies    []string   `yaml:"dependencies,omitempty"`
-	ArchivedReason  string     `yaml:"archived_reason,omitempty"`
-	Owner           string     `yaml:"owner,omitempty"`
-	Reviewers       []string   `yaml:"reviewers,omitempty"`
+	TaskID         string     `yaml:"task_id"`
+	TaskTitle      string     `yaml:"task_title"`
+	GeneratedAt    time.Time  `yaml:"generated_at"`
+	Summary        string     `yaml:"summary"`
+	Objectives     []string   `yaml:"objectives,omitempty"`
+	Completed      []string   `yaml:"completed,omitempty"`
+	NotCompleted   []string   `yaml:"not_completed,omitempty"`
+	Decisions      []Decision `yaml:"decisions,omitempty"`
+	KeyLearnings   []Learning `yaml:"key_learnings,omitempty"`
+	Gotchas        []Gotcha   `yaml:"gotchas,omitempty"`
+	OpenItems      []string   `yaml:"open_items,omitempty"`
+	NextSteps      []string   `yaml:"next_steps,omitempty"`
+	References     []string   `yaml:"references,omitempty"`
+	FilesModified  []string   `yaml:"files_modified,omitempty"`
+	TestsAdded     []string   `yaml:"tests_added,omitempty"`
+	Dependencies   []string   `yaml:"dependencies,omitempty"`
+	ArchivedReason string     `yaml:"archived_reason,omitempty"`
+	Owner          string     `yaml:"owner,omitempty"`
+	Reviewers      []string   `yaml:"reviewers,omitempty"`
 }
 
 // NewDecision creates a new Decision with default values

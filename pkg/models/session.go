@@ -14,16 +14,16 @@ type SessionTurn struct {
 
 // CapturedSession represents a captured AI session
 type CapturedSession struct {
-	ID          string        `yaml:"id"`
-	TaskID      string        `yaml:"task_id,omitempty"`
-	StartTime   time.Time     `yaml:"start_time"`
-	EndTime     time.Time     `yaml:"end_time,omitempty"`
-	Duration    int           `yaml:"duration,omitempty"` // in seconds
-	Turns       []SessionTurn `yaml:"turns"`
-	Summary     string        `yaml:"summary,omitempty"`
-	Tags        []string      `yaml:"tags,omitempty"`
-	ToolsUsed   []string      `yaml:"tools_used,omitempty"`
-	FilesEdited []string      `yaml:"files_edited,omitempty"`
+	ID          string            `yaml:"id"`
+	TaskID      string            `yaml:"task_id,omitempty"`
+	StartTime   time.Time         `yaml:"start_time"`
+	EndTime     time.Time         `yaml:"end_time,omitempty"`
+	Duration    int               `yaml:"duration,omitempty"` // in seconds
+	Turns       []SessionTurn     `yaml:"turns"`
+	Summary     string            `yaml:"summary,omitempty"`
+	Tags        []string          `yaml:"tags,omitempty"`
+	ToolsUsed   []string          `yaml:"tools_used,omitempty"`
+	FilesEdited []string          `yaml:"files_edited,omitempty"`
 	Metadata    map[string]string `yaml:"metadata,omitempty"`
 }
 

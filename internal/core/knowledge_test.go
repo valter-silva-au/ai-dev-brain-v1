@@ -27,12 +27,12 @@ func TestKnowledgeExtractor_ExtractFromTask(t *testing.T) {
 	extractor := NewKnowledgeExtractor(tmpDir)
 
 	tests := []struct {
-		name          string
-		taskID        string
-		setupFunc     func(string)
-		wantErr       bool
-		checkSummary  bool
-		checkRefs     bool
+		name         string
+		taskID       string
+		setupFunc    func(string)
+		wantErr      bool
+		checkSummary bool
+		checkRefs    bool
 	}{
 		{
 			name:    "Extract from task with context.md",

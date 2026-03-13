@@ -6,16 +6,16 @@ import (
 
 // Metrics represents aggregated metrics derived from the event log
 type Metrics struct {
-	TasksCreated        int                    `json:"tasks_created"`
-	TasksCompleted      int                    `json:"tasks_completed"`
-	TasksByStatus       map[string]int         `json:"tasks_by_status"`
-	TasksByType         map[string]int         `json:"tasks_by_type"`
-	AgentSessions       int                    `json:"agent_sessions"`
-	KnowledgeExtracts   int                    `json:"knowledge_extracts"`
-	WorktreesCreated    int                    `json:"worktrees_created"`
-	WorktreesRemoved    int                    `json:"worktrees_removed"`
-	LastEventTimestamp  time.Time              `json:"last_event_timestamp"`
-	TaskStatusHistory   map[string][]StatusChange `json:"task_status_history"` // task_id -> status changes
+	TasksCreated       int                       `json:"tasks_created"`
+	TasksCompleted     int                       `json:"tasks_completed"`
+	TasksByStatus      map[string]int            `json:"tasks_by_status"`
+	TasksByType        map[string]int            `json:"tasks_by_type"`
+	AgentSessions      int                       `json:"agent_sessions"`
+	KnowledgeExtracts  int                       `json:"knowledge_extracts"`
+	WorktreesCreated   int                       `json:"worktrees_created"`
+	WorktreesRemoved   int                       `json:"worktrees_removed"`
+	LastEventTimestamp time.Time                 `json:"last_event_timestamp"`
+	TaskStatusHistory  map[string][]StatusChange `json:"task_status_history"` // task_id -> status changes
 }
 
 // StatusChange represents a status change for a task

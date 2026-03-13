@@ -36,13 +36,13 @@ func NewTaskCmd() *cobra.Command {
 // newTaskCreateCmd creates the 'task create' command
 func newTaskCreateCmd() *cobra.Command {
 	var (
-		taskType     string
-		repo         string
-		priority     string
-		owner        string
-		tags         []string
-		description  string
-		acceptance   []string
+		taskType    string
+		repo        string
+		priority    string
+		owner       string
+		tags        []string
+		description string
+		acceptance  []string
 	)
 
 	cmd := &cobra.Command{
@@ -169,8 +169,8 @@ func newTaskResumeCmd() *cobra.Command {
 // newTaskArchiveCmd creates the 'task archive' command
 func newTaskArchiveCmd() *cobra.Command {
 	var (
-		force         bool
-		keepWorktree  bool
+		force        bool
+		keepWorktree bool
 	)
 
 	cmd := &cobra.Command{

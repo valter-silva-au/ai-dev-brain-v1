@@ -53,9 +53,9 @@ func IsOnline(timeout time.Duration) bool {
 
 	// Try multiple well-known addresses
 	addresses := []string{
-		"8.8.8.8:53",      // Google DNS
-		"1.1.1.1:53",      // Cloudflare DNS
-		"google.com:80",   // Google HTTP
+		"8.8.8.8:53",    // Google DNS
+		"1.1.1.1:53",    // Cloudflare DNS
+		"google.com:80", // Google HTTP
 	}
 
 	for _, addr := range addresses {

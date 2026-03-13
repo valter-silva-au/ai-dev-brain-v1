@@ -68,18 +68,18 @@ type CreateTaskOpts struct {
 
 // TaskManager orchestrates the task lifecycle
 type TaskManager struct {
-	backlogStore          BacklogStore
-	contextStore          ContextStore
-	worktreeCreator       WorktreeCreator
-	worktreeRemover       WorktreeRemover
-	eventLogger           EventLogger
-	sessionCapturer       SessionCapturer
-	terminalStateUpdater  TerminalStateUpdater
-	taskIDGenerator       TaskIDGenerator
-	templateManager       TemplateManager
-	ticketsDir            string
-	archivedDir           string
-	worktreesDir          string
+	backlogStore         BacklogStore
+	contextStore         ContextStore
+	worktreeCreator      WorktreeCreator
+	worktreeRemover      WorktreeRemover
+	eventLogger          EventLogger
+	sessionCapturer      SessionCapturer
+	terminalStateUpdater TerminalStateUpdater
+	taskIDGenerator      TaskIDGenerator
+	templateManager      TemplateManager
+	ticketsDir           string
+	archivedDir          string
+	worktreesDir         string
 }
 
 // NewTaskManager creates a new task manager

@@ -13,13 +13,13 @@ import (
 type EventType string
 
 const (
-	EventTaskCreated        EventType = "task.created"
-	EventTaskCompleted      EventType = "task.completed"
-	EventTaskStatusChanged  EventType = "task.status_changed"
+	EventTaskCreated         EventType = "task.created"
+	EventTaskCompleted       EventType = "task.completed"
+	EventTaskStatusChanged   EventType = "task.status_changed"
 	EventAgentSessionStarted EventType = "agent.session_started"
-	EventKnowledgeExtracted EventType = "knowledge.extracted"
-	EventWorktreeCreated    EventType = "worktree.created"
-	EventWorktreeRemoved    EventType = "worktree.removed"
+	EventKnowledgeExtracted  EventType = "knowledge.extracted"
+	EventWorktreeCreated     EventType = "worktree.created"
+	EventWorktreeRemoved     EventType = "worktree.removed"
 )
 
 // Event represents a single event in the system

@@ -28,10 +28,10 @@ type ContextGenerator interface {
 
 // DefaultContextGenerator implements ContextGenerator
 type DefaultContextGenerator struct {
-	backlogPath  string
-	ticketsDir   string
-	repoRoot     string
-	templateMgr  TemplateManager
+	backlogPath string
+	ticketsDir  string
+	repoRoot    string
+	templateMgr TemplateManager
 }
 
 // NewContextGenerator creates a new context generator

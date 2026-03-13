@@ -10,9 +10,9 @@ func TestDefaultGlobalConfig(t *testing.T) {
 	config := DefaultGlobalConfig()
 
 	tests := []struct {
-		name string
+		name  string
 		check func(*GlobalConfig) bool
-		desc string
+		desc  string
 	}{
 		{
 			name: "has default task ID prefix",
@@ -100,9 +100,9 @@ func TestDefaultRepoConfig(t *testing.T) {
 	config := DefaultRepoConfig()
 
 	tests := []struct {
-		name string
+		name  string
 		check func(*RepoConfig) bool
-		desc string
+		desc  string
 	}{
 		{
 			name: "base branch is main",
@@ -215,7 +215,7 @@ func TestGlobalConfig_YAMLSerialization(t *testing.T) {
 				"ui/*":  "frontend",
 			},
 		},
-		Hooks:   DefaultHookConfig(),
+		Hooks: DefaultHookConfig(),
 		Aliases: CLIAliasConfig{
 			Aliases: map[string]string{
 				"t": "task",
@@ -302,9 +302,9 @@ func TestRepoConfig_YAMLSerialization(t *testing.T) {
 
 func TestHookConfig_YAMLTags(t *testing.T) {
 	config := HookConfig{
-		Enabled:              true,
-		PreToolUse:           true,
-		PostToolUse:          false,
+		Enabled:               true,
+		PreToolUse:            true,
+		PostToolUse:           false,
 		AllowedVendorPatterns: []string{"*.json"},
 	}
 

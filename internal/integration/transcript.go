@@ -19,22 +19,22 @@ type TranscriptTurn struct {
 
 // ToolUsageStats tracks tool usage statistics
 type ToolUsageStats struct {
-	ToolName  string `json:"tool_name"`
-	Count     int    `json:"count"`
+	ToolName  string    `json:"tool_name"`
+	Count     int       `json:"count"`
 	FirstUsed time.Time `json:"first_used"`
 	LastUsed  time.Time `json:"last_used"`
 }
 
 // TranscriptResult represents the parsed transcript data
 type TranscriptResult struct {
-	Turns         []TranscriptTurn          `json:"turns"`
-	Summary       string                    `json:"summary"`
-	StartTime     time.Time                 `json:"start_time"`
-	EndTime       time.Time                 `json:"end_time"`
-	Duration      time.Duration             `json:"duration"`
+	Turns         []TranscriptTurn           `json:"turns"`
+	Summary       string                     `json:"summary"`
+	StartTime     time.Time                  `json:"start_time"`
+	EndTime       time.Time                  `json:"end_time"`
+	Duration      time.Duration              `json:"duration"`
 	ToolStats     map[string]*ToolUsageStats `json:"tool_stats"`
-	SchemaVersion string                    `json:"schema_version"`
-	TotalTurns    int                       `json:"total_turns"`
+	SchemaVersion string                     `json:"schema_version"`
+	TotalTurns    int                        `json:"total_turns"`
 }
 
 // TranscriptParser parses Claude Code JSONL session transcripts
@@ -52,7 +52,7 @@ type DefaultTranscriptParser struct {
 // NewTranscriptParser creates a new transcript parser with specified buffer sizes
 func NewTranscriptParser() TranscriptParser {
 	return &DefaultTranscriptParser{
-		initialBufferSize: 64 * 1024,     // 64KB initial
+		initialBufferSize: 64 * 1024,        // 64KB initial
 		maxBufferSize:     10 * 1024 * 1024, // 10MB max
 	}
 }

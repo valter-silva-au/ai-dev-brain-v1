@@ -293,7 +293,7 @@
         "adb hook install deploys wrappers to .claude/hooks/",
         "go test ./... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-015"
       ]

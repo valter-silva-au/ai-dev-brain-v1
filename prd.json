@@ -274,7 +274,7 @@
         "go build ./cmd/adb/ succeeds",
         "go test ./internal/cli/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-015"
       ]

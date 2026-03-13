@@ -147,7 +147,7 @@
         "Uses os/exec for git operations (no go-git)",
         "go test ./internal/integration/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

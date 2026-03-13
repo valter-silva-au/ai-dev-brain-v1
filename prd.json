@@ -163,7 +163,7 @@
         "Pipe commands delegate to shell",
         "go test ./internal/integration/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001",
         "TASK-006"

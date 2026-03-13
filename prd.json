@@ -198,7 +198,7 @@
         "Thresholds are configurable",
         "go test ./internal/observability/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

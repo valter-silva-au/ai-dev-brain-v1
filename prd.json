@@ -129,7 +129,7 @@
         "Uses TemplateManager for template rendering",
         "go test ./internal/core/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-005",
         "TASK-006",

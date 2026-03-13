@@ -19,6 +19,7 @@ that integrates with git worktrees, Claude Code, and terminal environments.`,
 
 	// Add subcommands
 	rootCmd.AddCommand(NewTaskCmd())
+	rootCmd.AddCommand(NewSessionCmd())
 	rootCmd.AddCommand(NewSyncCmd())
 	rootCmd.AddCommand(NewInitCmd())
 	rootCmd.AddCommand(NewExecCmd())

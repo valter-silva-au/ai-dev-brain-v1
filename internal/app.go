@@ -269,6 +269,11 @@ func NewApp(basePath string) (*App, error) {
 	return app, nil
 }
 
+// GetSessionStore returns the session store manager
+func (app *App) GetSessionStore() storage.SessionStoreManager {
+	return app.SessionStoreManager
+}
+
 // Cleanup performs cleanup operations (optional, for graceful shutdown)
 func (app *App) Cleanup() error {
 	// Future: close any open resources, flush buffers, etc.

@@ -15,7 +15,7 @@
         "All types have YAML struct tags",
         "go test ./pkg/models/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": []
     },
     {

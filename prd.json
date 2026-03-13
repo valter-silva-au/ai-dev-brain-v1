@@ -46,7 +46,7 @@
         "File permissions 0o644",
         "go test ./internal/storage/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

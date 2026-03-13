@@ -20,6 +20,10 @@ const (
 	TemplateTypeHandoff TemplateType = "handoff.md"
 	// TemplateTypeStatus represents a status.yaml template
 	TemplateTypeStatus TemplateType = "status.yaml"
+	// TemplateTypeContext represents a context.md template
+	TemplateTypeContext TemplateType = "context.md"
+	// TemplateTypeTaskContext represents a task-context.md template for .claude/rules/
+	TemplateTypeTaskContext TemplateType = "task-context.md"
 )
 
 // TemplateManager defines the interface for rendering templates
@@ -50,6 +54,8 @@ func NewEmbedTemplateManager(fs embed.FS) (*EmbedTemplateManager, error) {
 		TemplateTypeDesign,
 		TemplateTypeHandoff,
 		TemplateTypeStatus,
+		TemplateTypeContext,
+		TemplateTypeTaskContext,
 	}
 
 	for _, tt := range templateTypes {

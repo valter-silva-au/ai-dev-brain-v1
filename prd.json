@@ -1,0 +1,344 @@
+{
+  "name": "ai-dev-brain",
+  "test_command": "go test ./... -count=1",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Domain models package",
+      "description": "Create pkg/models/ with all shared domain types. Implement: Task struct (ID, Title, Type with enum feat|bug|spike|refactor, Source, Status with enum backlog|in_progress|blocked|review|done|archived, Priority enum P0-P3, Owner, Created/Updated timestamps, Repo, Branch, WorktreePath, TicketPath, Tags []string, BlockedBy []string, Teams, TeamMetadata). Also implement: GlobalConfig (with NotificationConfig, TeamRoutingConfig, HookConfig), RepoConfig, MergedConfig, CLIAliasConfig, Communication, CommunicationTag, CapturedSession, SessionTurn, SessionFilter, SessionCaptureConfig, ExtractedKnowledge, Decision, HandoffDocument. Use YAML struct tags on all persisted fields. Use time.Now().UTC() for timestamps. All types should be in separate files organized by domain area. Include comprehensive unit tests with table-driven subtests.",
+      "acceptance_criteria": [
+        "pkg/models/task.go contains Task, TaskType, TaskStatus, Priority types with YAML tags",
+        "pkg/models/config.go contains GlobalConfig, RepoConfig, MergedConfig, CLIAliasConfig, HookConfig, NotificationConfig, TeamRoutingConfig",
+        "pkg/models/session.go contains CapturedSession, SessionTurn, SessionFilter, SessionCaptureConfig",
+        "pkg/models/knowledge.go contains ExtractedKnowledge, Decision, HandoffDocument",
+        "pkg/models/communication.go contains Communication, CommunicationTag",
+        "All types have YAML struct tags",
+        "go test ./pkg/models/... passes"
+      ],
+      "status": "pending",
+      "dependencies": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Storage - Backlog manager",
+      "description": "Create internal/storage/backlog.go implementing BacklogManager interface: Load() (*models.Backlog, error), Save(backlog *models.Backlog) error, AddTask(task models.Task) error, UpdateTask(task models.Task) error, GetTask(id string) (*models.Task, error), RemoveTask(id string) error. Persists tasks to backlog.yaml using gopkg.in/yaml.v3. Include file-level locking for concurrent safety. Use os.MkdirAll for directory creation. File permissions: dirs 0o755, files 0o644. Add a Backlog type in pkg/models that wraps []Task. Include comprehensive tests using t.TempDir() for filesystem isolation.",
+      "acceptance_criteria": [
+        "internal/storage/backlog.go implements BacklogManager with Load, Save, AddTask, UpdateTask, GetTask, RemoveTask",
+        "Uses file-level locking for concurrent safety",
+        "Persists to backlog.yaml using YAML format",
+        "File permissions are 0o644 for files, 0o755 for directories",
+        "Tests use t.TempDir() for isolation",
+        "go test ./internal/storage/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Storage - Context manager",
+      "description": "Create internal/storage/context.go implementing ContextManager interface: ReadContext(taskID string) (string, error), WriteContext(taskID string, content string) error, AppendContext(taskID string, section string) error, ReadNotes(taskID string) (string, error), WriteNotes(taskID string, content string) error. Operates on per-task directories: tickets/TASK-XXXXX/context.md and notes.md. Support append operations for hook-driven updates. Include unit tests with t.TempDir().",
+      "acceptance_criteria": [
+        "internal/storage/context.go implements ContextManager",
+        "Reads/writes context.md and notes.md per task directory",
+        "AppendContext supports incremental updates",
+        "File permissions 0o644",
+        "go test ./internal/storage/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-004",
+      "title": "Storage - Communication and Session store managers",
+      "description": "Create internal/storage/communication.go implementing CommunicationManager: stores stakeholder communications as dated markdown files under tickets/TASK-XXXXX/communications/. Create internal/storage/sessionstore.go implementing SessionStoreManager: workspace-level captured session storage with YAML index (sessions/index.yaml) and per-session directories (sessions/S-XXXXX/ with session.yaml, turns.yaml, summary.md). Sequential session ID counter. Include tests.",
+      "acceptance_criteria": [
+        "internal/storage/communication.go stores dated markdown files in communications/",
+        "internal/storage/sessionstore.go manages sessions with YAML index",
+        "Session directories follow S-XXXXX naming pattern",
+        "go test ./internal/storage/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Core - Task ID generator",
+      "description": "Create internal/core/taskid.go implementing TaskIDGenerator interface with GenerateTaskID() (string, error). Uses sequential IDs with file-based counter and flock locking. Format: {prefix}-{counter:05d} (e.g., TASK-00001). Counter stored in .task_counter plain text file. The prefix should be configurable. Include comprehensive tests including concurrent generation tests.",
+      "acceptance_criteria": [
+        "internal/core/taskid.go generates sequential task IDs",
+        "Uses file-based counter with flock locking",
+        "Format is {prefix}-{counter:05d}",
+        "Counter persists in .task_counter file",
+        "Prefix is configurable",
+        "Tests include concurrent ID generation",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Core - Configuration manager",
+      "description": "Create internal/core/config.go implementing ConfigurationManager using github.com/spf13/viper. Two config layers: .taskconfig (global config - task ID prefix/counter, defaults, aliases, notifications, hooks) and .taskrc (per-repo config - build/test commands, reviewers, conventions). Precedence: .taskrc > .taskconfig > defaults. Expose a MergedConfig that combines both layers. Include DefaultHookConfig() that enables Phase 1 features with Phase 2/3 opt-in. Include tests.",
+      "acceptance_criteria": [
+        "internal/core/config.go uses Viper for configuration",
+        "Loads .taskconfig (global) and .taskrc (per-repo)",
+        "Precedence: .taskrc > .taskconfig > defaults",
+        "Returns MergedConfig combining both layers",
+        "DefaultHookConfig() returns sensible defaults",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-007",
+      "title": "Core - Template manager",
+      "description": "Create internal/core/templates.go implementing TemplateManager: type-specific templates for notes.md, design.md, handoff.md, status.yaml using Go's text/template. Templates should be embedded via //go:embed in a templates/ directory. Create templates/claude/embed.go exporting FS as embed.FS. Include template files for notes (with acceptance criteria sections), design (with architecture sections), and handoff (with summary, decisions, open items). Always use path.Join (not filepath.Join) when reading from embed.FS. Include tests.",
+      "acceptance_criteria": [
+        "internal/core/templates.go renders templates via text/template",
+        "templates/claude/embed.go exports FS as embed.FS",
+        "Template files for notes.md, design.md, handoff.md exist",
+        "Uses path.Join for embed.FS paths",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-008",
+      "title": "Core - Bootstrap system",
+      "description": "Create internal/core/bootstrap.go implementing BootstrapSystem. Scaffolds a new task's directory structure: tickets/TASK-XXXXX/ with status.yaml, context.md, notes.md, design.md, sessions/, knowledge/ subdirectories. Also generates .claude/rules/task-context.md inside the worktree so the AI assistant knows what task it's working on. Uses TemplateManager for file content. knowledge/ contains decisions.yaml (initially empty). Include tests verifying all directories and files are created.",
+      "acceptance_criteria": [
+        "internal/core/bootstrap.go scaffolds tickets/TASK-XXXXX/ directory tree",
+        "Creates status.yaml, context.md, notes.md, design.md",
+        "Creates sessions/ and knowledge/ subdirectories",
+        "Generates .claude/rules/task-context.md in worktree",
+        "Uses TemplateManager for template rendering",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-005", "TASK-006", "TASK-007"]
+    },
+    {
+      "id": "TASK-009",
+      "title": "Integration - Git worktree manager",
+      "description": "Create internal/integration/worktree.go implementing GitWorktreeManager: CreateWorktree (handles local paths and platform/org/repo identifiers, clones repos if needed with HTTPS first SSH fallback, creates worktree with new branch from base branch), RemoveWorktree (force-remove, resolve parent repo from .git file), ListWorktrees (parse 'git worktree list --porcelain'), GetWorktreeForTask (checks basePath/work/{taskID}), NormalizeRepoPath (converts various URL formats to canonical platform/org/repo). Multi-repo: repos cloned to repos/{platform}/{org}/{repo}. Worktrees at basePath/work/{taskID}. All git operations via os/exec (no go-git library). Include tests.",
+      "acceptance_criteria": [
+        "internal/integration/worktree.go implements CreateWorktree, RemoveWorktree, ListWorktrees, GetWorktreeForTask",
+        "NormalizeRepoPath handles HTTPS URLs, SSH URLs, and relative paths",
+        "Worktrees created at basePath/work/{taskID}",
+        "Uses os/exec for git operations (no go-git)",
+        "go test ./internal/integration/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-010",
+      "title": "Integration - CLI executor and terminal utilities",
+      "description": "Create internal/integration/cliexec.go implementing CLIExecutor: alias resolution from config, task env injection (ADB_TASK_ID, ADB_BRANCH, ADB_WORKTREE_PATH, ADB_TICKET_PATH), pipe support (commands with | delegate to sh -c), failure logging to context.md, output capture via io.MultiWriter. Create internal/integration/tab.go implementing TabManager: terminal tab renaming via ANSI OSC 0 sequences. Create internal/integration/terminalstate.go implementing TerminalStateWriter: manages .adb_terminal_state.json for VS Code tab styling, thread-safe via mutex, auto-cleans entries for non-existent worktrees, handles corrupt JSON by resetting. Include tests.",
+      "acceptance_criteria": [
+        "internal/integration/cliexec.go implements CLIExecutor with alias resolution and env injection",
+        "internal/integration/tab.go renames terminal tabs via ANSI OSC 0",
+        "internal/integration/terminalstate.go manages .adb_terminal_state.json thread-safely",
+        "Pipe commands delegate to shell",
+        "go test ./internal/integration/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001", "TASK-006"]
+    },
+    {
+      "id": "TASK-011",
+      "title": "Integration - Transcript parser and other utilities",
+      "description": "Create internal/integration/transcript.go implementing TranscriptParser: parses Claude Code JSONL session transcripts into TranscriptResult (turns, summary, timestamps, tool usage stats). Uses large scanner buffer (64KB initial, 10MB max). Detects schema version from first 5 lines. StructuralSummarizer generates non-LLM summaries. Create internal/integration/version.go: semver parsing with regex, feature gates map. Create internal/integration/offline.go: TCP dial connectivity check with timeout. Create internal/integration/mcpclient.go: HTTP GET health checks for MCP servers with TTL cache. Include tests.",
+      "acceptance_criteria": [
+        "internal/integration/transcript.go parses JSONL transcripts into structured data",
+        "Uses 64KB initial / 10MB max scanner buffer",
+        "internal/integration/version.go provides semver parsing and feature gates",
+        "internal/integration/offline.go checks connectivity via TCP dial",
+        "internal/integration/mcpclient.go checks MCP server health with cache",
+        "go test ./internal/integration/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-012",
+      "title": "Observability - Event log, metrics, and alerts",
+      "description": "Create internal/observability/eventlog.go: append-only JSONL file (.adb_events.jsonl), thread-safe writes via mutex, gracefully skips malformed lines on read, non-fatal if log file can't be created. Event types: task.created, task.completed, task.status_changed, agent.session_started, knowledge.extracted, worktree.created, worktree.removed. Create internal/observability/metrics.go: derives aggregated metrics on-demand from event log (tasks created/completed, by status/type, agent sessions). Create internal/observability/alerting.go: evaluates conditions against configurable thresholds (task_blocked_too_long 24h High, task_stale 3d Medium, review_too_long 5d Medium, backlog_too_large 10 tasks Low). Include tests.",
+      "acceptance_criteria": [
+        "internal/observability/eventlog.go writes append-only JSONL, thread-safe",
+        "Non-fatal: observability failures don't crash the CLI",
+        "internal/observability/metrics.go computes metrics on-demand from event log",
+        "internal/observability/alerting.go evaluates alert conditions against thresholds",
+        "Thresholds are configurable",
+        "go test ./internal/observability/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-001"]
+    },
+    {
+      "id": "TASK-013",
+      "title": "Core - Task manager (lifecycle orchestration)",
+      "description": "Create internal/core/taskmanager.go implementing TaskManager. Define local interfaces: BacklogStore, ContextStore, WorktreeCreator, WorktreeRemover, EventLogger, SessionCapturer, TerminalStateUpdater. Implement task lifecycle: Create (generate task ID, add to backlog, bootstrap dirs, create worktree, write terminal state, log event), Resume (load task, check not archived, promote backlog->in_progress, get worktree path), Archive (generate handoff.md from template, move ticket to _archived/, remove worktree, update backlog to archived), Unarchive (move back, update to backlog), UpdateStatus/Priority, Cleanup (remove worktree only), Delete (full removal). CreateTaskOpts: Priority, Owner, Tags, Prefix, Repo. Include tests with mock implementations of all interfaces.",
+      "acceptance_criteria": [
+        "internal/core/taskmanager.go defines local interfaces (BacklogStore, ContextStore, WorktreeCreator, etc.)",
+        "Implements Create, Resume, Archive, Unarchive, UpdateStatus, UpdatePriority, Cleanup, Delete",
+        "Create generates ID, bootstraps dirs, creates worktree, logs event",
+        "Archive generates handoff.md, moves to _archived/, removes worktree",
+        "Tests use mock implementations of all interfaces",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-002", "TASK-003", "TASK-005", "TASK-008", "TASK-009", "TASK-012"]
+    },
+    {
+      "id": "TASK-014",
+      "title": "App wiring with adapter pattern",
+      "description": "Create internal/app.go implementing the App struct with dependency wiring. This is the single source of truth for dependency injection. Create adapter structs that bridge core's local interfaces to real implementations (e.g., backlogStoreAdapter bridges core.BacklogStore to storage.BacklogManager). NewApp(basePath) constructs everything in dependency order. Organize fields by category: Configuration, Storage, Core Services, Integration, Observability. Set CLI package-level variables after construction. The adapter pattern prevents circular imports: Core defines interfaces, implementations live in storage/integration/observability, app.go bridges them. Include integration tests.",
+      "acceptance_criteria": [
+        "internal/app.go defines App struct with all subsystem fields",
+        "Adapter structs bridge core interfaces to real implementations",
+        "NewApp(basePath) constructs everything in dependency order",
+        "No circular imports between packages",
+        "Sets CLI package-level variables",
+        "go test ./internal/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-013", "TASK-010", "TASK-011"]
+    },
+    {
+      "id": "TASK-015",
+      "title": "CLI - Cobra commands (task lifecycle)",
+      "description": "Create internal/cli/ package with Cobra commands. Dependencies arrive through package-level variables set by app.go (create internal/cli/vars.go). Implement noun-verb pattern: 'adb task create <branch> --type=feat|bug|spike|refactor [--repo] [--priority] [--owner] [--tags]', 'adb task resume <task-id>', 'adb task archive <task-id> [--force] [--keep-worktree]', 'adb task unarchive <task-id>', 'adb task cleanup <task-id>', 'adb task status [--filter <status>]', 'adb task priority <task-id>...', 'adb task update <task-id>'. Create cmd/adb/main.go as entry point that parses ldflags (VERSION, COMMIT, DATE), resolves base path (ADB_HOME env or walk up looking for .taskconfig), creates App, executes CLI. The launchWorkflow function renames terminal tab, updates terminal state, launches Claude Code in worktree, drops user into interactive shell. Include tests for argument parsing.",
+      "acceptance_criteria": [
+        "internal/cli/vars.go defines package-level variables for dependencies",
+        "Cobra commands implement 'adb task {create,resume,archive,unarchive,cleanup,status,priority,update}'",
+        "cmd/adb/main.go resolves base path and wires App to CLI",
+        "launchWorkflow launches Claude Code in worktree",
+        "go build ./cmd/adb/ succeeds",
+        "go test ./internal/cli/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-014"]
+    },
+    {
+      "id": "TASK-016",
+      "title": "CLI - Sync, init, exec, run, metrics, alerts, dashboard commands",
+      "description": "Add remaining CLI commands: 'adb sync context' (regenerate CLAUDE.md), 'adb sync task-context [--hook-mode]', 'adb sync repos', 'adb sync claude-user [--dry-run] [--mcp]', 'adb sync all', 'adb init [path] [--name] [--ai] [--prefix]' (full workspace scaffolding), 'adb init claude [path] [--managed]', 'adb exec <cli> [args...]' (runs via CLIExecutor), 'adb run <task-name>' (TaskfileRunner), 'adb metrics [--json] [--since 7d]', 'adb alerts [--notify]', 'adb dashboard' (TUI using charmbracelet/bubbletea), 'adb version'. Include tests.",
+      "acceptance_criteria": [
+        "Sync commands regenerate context files",
+        "Init command scaffolds workspace with templates",
+        "Exec delegates to CLIExecutor with env injection",
+        "Metrics and alerts commands display data from observability",
+        "Dashboard uses bubbletea for TUI",
+        "go build ./cmd/adb/ succeeds",
+        "go test ./internal/cli/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-015"]
+    },
+    {
+      "id": "TASK-017",
+      "title": "Hook engine and shell wrappers",
+      "description": "Create internal/core/hookengine.go implementing HookEngine: processes Claude Code hook events with hybrid shell/Go architecture. Shell wrappers (.claude/hooks/adb-hook-*.sh) set ADB_HOOK_ACTIVE=1 and pipe stdin to 'adb hook <type>'. Go binary does validation, formatting, tracking, knowledge work. Recursion prevented by checking ADB_HOOK_ACTIVE env var. Hook types: PreToolUse (blocking, blocks vendor/go.sum edits), PostToolUse (non-blocking, auto-formats Go with gofmt, tracks changes to .adb_session_changes), Stop (advisory, checks uncommitted changes/build/vet, updates context.md), TaskCompleted (two-phase: Phase A blocking quality gates, Phase B non-blocking knowledge extraction), SessionEnd (captures transcript, updates context.md). Create internal/hooks/stdin.go (generic ParseStdin[T] for JSON payloads), tracker.go (ChangeTracker for .adb_session_changes), artifacts.go (context append helpers). Create CLI command 'adb hook {install,status,pre-tool-use,post-tool-use,stop,task-completed,session-end}'. Include tests.",
+      "acceptance_criteria": [
+        "internal/core/hookengine.go processes all hook types",
+        "PreToolUse blocks vendor/ and go.sum edits",
+        "PostToolUse auto-formats Go files and tracks changes",
+        "TaskCompleted has two phases: blocking quality gates + non-blocking knowledge extraction",
+        "internal/hooks/ provides ParseStdin, ChangeTracker, artifacts helpers",
+        "Shell wrappers prevent recursion via ADB_HOOK_ACTIVE",
+        "adb hook install deploys wrappers to .claude/hooks/",
+        "go test ./... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-015"]
+    },
+    {
+      "id": "TASK-018",
+      "title": "AI context generator",
+      "description": "Create internal/core/aicontext.go implementing AIContextGenerator: generates root-level CLAUDE.md by assembling sections: Project Overview (hardcoded summary), Directory Structure (hardcoded tree), Conventions (from docs/wiki/*convention*.md files), Glossary (from docs/glossary.md), Decisions Summary (from docs/decisions/*.md, accepted ADRs only), Active Tasks (from backlog.yaml filtered by active statuses), Critical Decisions (from tickets/*/knowledge/decisions.yaml of active tasks), Recent Sessions (latest tickets/*/sessions/*.md truncated to 20 lines), Captured Sessions (from workspace sessions/ store), What's Changed (semantic diff via .context_state.yaml), Stakeholders/Contacts (from docs/stakeholders.md, docs/contacts.md). The 'What's Changed' section uses .context_state.yaml to track section hashes between syncs. Include tests.",
+      "acceptance_criteria": [
+        "internal/core/aicontext.go assembles CLAUDE.md from multiple data sources",
+        "Tracks section hashes in .context_state.yaml for semantic diffs",
+        "What's Changed section shows tasks added/completed and new knowledge",
+        "Handles missing files gracefully",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-013"]
+    },
+    {
+      "id": "TASK-019",
+      "title": "Knowledge extractor and conflict detector",
+      "description": "Create internal/core/knowledge.go implementing KnowledgeExtractor: extracts learnings, decisions, gotchas from completed tasks into knowledge/decisions.yaml (within each task's ticket directory). Create internal/core/conflict.go implementing ConflictDetector: checks proposed changes against existing ADRs and decisions to detect conflicts. These are used by the hook engine (Phase B of TaskCompleted) and the sync commands. Include tests.",
+      "acceptance_criteria": [
+        "internal/core/knowledge.go extracts decisions to knowledge/decisions.yaml",
+        "internal/core/conflict.go checks changes against ADRs",
+        "Both integrate with hook engine's Phase B",
+        "go test ./internal/core/... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-013"]
+    },
+    {
+      "id": "TASK-020",
+      "title": "Session capture and MCP/repo sync integration",
+      "description": "Create CLI commands: 'adb session save|ingest|capture|list|show' for managing captured sessions. Create internal/integration/reposync.go implementing RepoSyncManager: parallel fetch/prune/ff-merge/branch-cleanup for all repos under repos/. Create internal/integration/taskfilerunner.go: discovers and runs Taskfile.yaml tasks via CLIExecutor. Create internal/integration/screenshot.go: OS-specific screenshot capture (screencapture on macOS, import on Linux, snippingtool on Windows). Create internal/integration/filechannel.go: file-based inbox/outbox with YAML frontmatter. Include tests.",
+      "acceptance_criteria": [
+        "Session commands manage captured Claude Code sessions",
+        "RepoSyncManager does parallel repo sync operations",
+        "TaskfileRunner discovers and runs Taskfile.yaml tasks",
+        "Screenshot pipeline supports Linux, macOS, Windows",
+        "go test ./... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-016"]
+    },
+    {
+      "id": "TASK-021",
+      "title": "Project initializer and team/agents commands",
+      "description": "Create internal/core/projectinit.go implementing ProjectInitializer: full workspace scaffolding for new projects with embedded templates, git init, .taskconfig creation, .claude/ setup. Create CLI commands: 'adb team <team-name> <prompt>' for multi-agent orchestration, 'adb agents' to list available agents, 'adb mcp check [--no-cache]' for MCP health checks. Create embedded templates for BMAD artifacts (PRD, product-brief, tech-spec, architecture-doc) and quality gate checklists. Include tests.",
+      "acceptance_criteria": [
+        "ProjectInitializer scaffolds complete workspace from templates",
+        "Team command launches multi-agent orchestration",
+        "Agents command lists available specialized agents",
+        "MCP check validates server health",
+        "go test ./... passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-016"]
+    },
+    {
+      "id": "TASK-022",
+      "title": "Property-based tests and edge case hardening",
+      "description": "Add property-based tests using pgregory.net/rapid across all packages. Categories: string/format transformations (branch name sanitization, task ID formatting), state transitions (task lifecycle), data structure operations (backlog CRUD), conflict detection, text processing. Add edge case tests: empty backlog, missing config, corrupted YAML recovery, permission errors, concurrent operations, invalid task IDs. Follow naming convention: TestProperty_* for property tests. Use t.TempDir() for all filesystem tests. Target: at least 15 property test functions across core, storage, hooks, and integration packages.",
+      "acceptance_criteria": [
+        "At least 15 property-based test functions using rapid",
+        "Edge case tests cover: empty backlog, missing config, corrupted YAML, concurrent ops",
+        "All property tests follow TestProperty_* naming",
+        "go test ./... -run TestProperty passes",
+        "go test ./... -count=1 passes"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-017", "TASK-018", "TASK-019"]
+    },
+    {
+      "id": "TASK-023",
+      "title": "Build system, linter config, and CI pipeline",
+      "description": "Create Makefile with targets: build (go build with ldflags for VERSION/COMMIT/DATE), test (go test with race detection), lint (golangci-lint), vet (go vet), fmt (gofmt -s -w), security (govulncheck), docker-build (multi-stage), install-local (to ~/.local/bin/adb). Create .golangci.yml with enabled linters: errcheck, gosimple, govet, ineffassign, staticcheck, unused, gosec, bodyclose, exhaustive, nilerr, unparam. Test file exclusions for gosec, unparam, errcheck. Create .goreleaser.yml for Linux/macOS/Windows (amd64+arm64) with checksums. Create Dockerfile: two-stage Alpine build (golang:1.22-alpine builder with CGO_ENABLED=0, alpine:3.21 runtime with git + ca-certificates). Create .github/workflows/ci.yml running tests, lint, vet on push. Include a .gitignore for Go projects.",
+      "acceptance_criteria": [
+        "Makefile has build, test, lint, vet, fmt, security, docker-build, install-local targets",
+        ".golangci.yml enables errcheck, gosimple, govet, staticcheck, unused, gosec, etc.",
+        ".goreleaser.yml builds for 6 platform/arch combinations",
+        "Dockerfile uses multi-stage Alpine build",
+        ".github/workflows/ci.yml runs tests and lint on push",
+        "make build succeeds"
+      ],
+      "status": "pending",
+      "dependencies": ["TASK-020", "TASK-021", "TASK-022"]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+# Binaries
+adb
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+*.out
+coverage.txt
+
+# Vendor (if used)
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent loops state
+.agent-loops/
+
+# ADB state files
+.adb_events.jsonl
+.adb_terminal_state.json
+.adb_session_changes
+.adb_mcp_cache.json
+.offline_queue.json
+.context_state.yaml
+.context_changelog.md
+.task_counter
+.session_counter

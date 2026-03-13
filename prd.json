@@ -215,7 +215,7 @@
         "Tests use mock implementations of all interfaces",
         "go test ./internal/core/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-002",
         "TASK-003",

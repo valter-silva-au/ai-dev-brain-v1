@@ -61,7 +61,7 @@
         "Session directories follow S-XXXXX naming pattern",
         "go test ./internal/storage/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-001"
       ]

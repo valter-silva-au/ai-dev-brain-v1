@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/valter-silva-au/ai-dev-brain/internal/core"
+	"github.com/valter-silva-au/ai-dev-brain/templates/claude"
 )
 
 // NewInitCmd creates the init command with all subcommands
@@ -20,6 +22,7 @@ func NewInitCmd() *cobra.Command {
 	initCmd.AddCommand(
 		newInitWorkspaceCmd(),
 		newInitClaudeCmd(),
+		newInitProjectCmd(),
 	)
 
 	return initCmd
@@ -249,6 +252,101 @@ func newInitClaudeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&managed, "managed", false, "Enable managed mode (auto-regeneration)")
+
+	return cmd
+}
+
+// newInitProjectCmd creates the 'init project' command using ProjectInitializer
+func newInitProjectCmd() *cobra.Command {
+	var (
+		name       string
+		ai         string
+		prefix     string
+		gitInit    bool
+		withBMAD   bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "project [path]",
+		Short: "Initialize a new project with full scaffolding",
+		Long: `Initialize a new project with complete workspace scaffolding including:
+- Directory structure (tickets, work, sessions, .adb, .claude)
+- Configuration files (.taskrc, backlog.yaml)
+- Git repository (optional)
+- BMAD artifacts (PRD, tech-spec, architecture-doc, quality gates) (optional)
+- Claude integration files`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			targetPath := "."
+			if len(args) > 0 {
+				targetPath = args[0]
+			}
+
+			// Create absolute path
+			absPath, err := filepath.Abs(targetPath)
+			if err != nil {
+				return fmt.Errorf("failed to resolve path: %w", err)
+			}
+
+			fmt.Printf("🚀 Initializing project at %s...\n", absPath)
+
+			// Create ProjectInitializer
+			initializer := core.NewFileProjectInitializer(claude.FS)
+
+			// Configure options
+			options := core.InitOptions{
+				Name:         name,
+				AIProvider:   ai,
+				TaskIDPrefix: prefix,
+				GitInit:      gitInit,
+				WithBMAD:     withBMAD,
+			}
+
+			// Set defaults
+			if options.Name == "" {
+				options.Name = filepath.Base(absPath)
+			}
+			if options.AIProvider == "" {
+				options.AIProvider = "claude"
+			}
+			if options.TaskIDPrefix == "" {
+				options.TaskIDPrefix = "TASK"
+			}
+
+			// Initialize project
+			if err := initializer.InitializeProject(absPath, options); err != nil {
+				return fmt.Errorf("failed to initialize project: %w", err)
+			}
+
+			fmt.Printf("\n✅ Project initialized successfully!\n\n")
+			fmt.Println("📁 Created:")
+			fmt.Println("   • Directory structure (tickets, work, sessions, .adb, .claude)")
+			fmt.Println("   • Configuration files (.taskrc, backlog.yaml)")
+			if gitInit {
+				fmt.Println("   • Git repository (.git, .gitignore)")
+			}
+			if withBMAD {
+				fmt.Println("   • BMAD artifacts (docs/bmad/*.md)")
+			}
+			fmt.Println("   • Claude integration files (.claude/)")
+
+			fmt.Printf("\n💡 Next steps:\n")
+			if absPath != "." {
+				fmt.Printf("   cd %s\n", absPath)
+			}
+			fmt.Println("   adb task create <branch-name>  # Create your first task")
+			fmt.Println("   adb agents                      # See available agents")
+			fmt.Println("   adb team dev \"your task\"        # Launch multi-agent team")
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&name, "name", "", "Project name")
+	cmd.Flags().StringVar(&ai, "ai", "claude", "AI provider (claude, gpt)")
+	cmd.Flags().StringVar(&prefix, "prefix", "TASK", "Task ID prefix")
+	cmd.Flags().BoolVar(&gitInit, "git", false, "Initialize git repository")
+	cmd.Flags().BoolVar(&withBMAD, "bmad", false, "Include BMAD artifacts (PRD, tech-spec, etc.)")
 
 	return cmd
 }

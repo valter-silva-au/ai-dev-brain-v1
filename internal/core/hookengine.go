@@ -254,6 +254,13 @@ func (he *HookEngine) phaseBKnowledgeExtraction(event *hooks.TaskCompletedEvent)
 		return err
 	}
 
+	// Extract knowledge using KnowledgeExtractor
+	extractor := NewKnowledgeExtractor(he.basePath)
+	if err := extractor.ExtractAndSave(event.TaskID); err != nil {
+		// Log warning but don't fail - knowledge extraction is advisory
+		fmt.Fprintf(os.Stderr, "Warning: failed to extract knowledge: %v\n", err)
+	}
+
 	// Clear tracked changes
 	if err := he.tracker.Clear(); err != nil {
 		return err

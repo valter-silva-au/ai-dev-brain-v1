@@ -324,7 +324,7 @@
         "Both integrate with hook engine's Phase B",
         "go test ./internal/core/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "TASK-013"
       ]

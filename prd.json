@@ -152,7 +152,7 @@
         "All tests pass: go test ./internal/hive/... -count=1 -race",
         "Tests exercise ProjectRegistry + KnowledgeAggregator + AgentRegistry + MessageBus together"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "HIVE-003",
         "HIVE-005",

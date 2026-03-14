@@ -28,7 +28,9 @@
         "go vet ./internal/hive/... passes"
       ],
       "status": "done",
-      "dependencies": ["HIVE-001"]
+      "dependencies": [
+        "HIVE-001"
+      ]
     },
     {
       "id": "HIVE-003",
@@ -40,8 +42,10 @@
         "All tests pass: go test ./internal/hive/... -count=1 -race",
         "Tests use t.TempDir() for isolation"
       ],
-      "status": "pending",
-      "dependencies": ["HIVE-002"]
+      "status": "done",
+      "dependencies": [
+        "HIVE-002"
+      ]
     },
     {
       "id": "HIVE-004",
@@ -55,7 +59,9 @@
         "go vet ./internal/hive/... passes"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-002"]
+      "dependencies": [
+        "HIVE-002"
+      ]
     },
     {
       "id": "HIVE-005",
@@ -68,7 +74,9 @@
         "Tests use t.TempDir() for isolation"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-004"]
+      "dependencies": [
+        "HIVE-004"
+      ]
     },
     {
       "id": "HIVE-006",
@@ -83,7 +91,9 @@
         "go vet ./internal/hive/... passes"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-001"]
+      "dependencies": [
+        "HIVE-001"
+      ]
     },
     {
       "id": "HIVE-007",
@@ -96,7 +106,9 @@
         "Tests use t.TempDir() for isolation"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-006"]
+      "dependencies": [
+        "HIVE-006"
+      ]
     },
     {
       "id": "HIVE-008",
@@ -111,7 +123,9 @@
         "go vet ./internal/hive/... passes"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-001"]
+      "dependencies": [
+        "HIVE-001"
+      ]
     },
     {
       "id": "HIVE-009",
@@ -124,7 +138,9 @@
         "Tests use t.TempDir() for isolation"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-008"]
+      "dependencies": [
+        "HIVE-008"
+      ]
     },
     {
       "id": "HIVE-010",
@@ -137,7 +153,12 @@
         "Tests exercise ProjectRegistry + KnowledgeAggregator + AgentRegistry + MessageBus together"
       ],
       "status": "pending",
-      "dependencies": ["HIVE-003", "HIVE-005", "HIVE-007", "HIVE-009"]
+      "dependencies": [
+        "HIVE-003",
+        "HIVE-005",
+        "HIVE-007",
+        "HIVE-009"
+      ]
     }
   ]
 }

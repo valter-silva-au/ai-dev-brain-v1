@@ -124,7 +124,7 @@ func (s *projectRegistryStore) Get(repoPathOrName string) (*models.Project, erro
 
 // List returns projects matching the given filter criteria.
 func (s *projectRegistryStore) List(filter models.ProjectFilter) ([]models.Project, error) {
-	var result []models.Project
+	result := []models.Project{}
 
 	for _, p := range s.projects {
 		if matchesFilter(p, filter) {

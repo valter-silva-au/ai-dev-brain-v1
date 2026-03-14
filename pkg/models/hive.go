@@ -98,3 +98,40 @@ type HiveContext struct {
 	CrossRepoPatterns  []string              `yaml:"cross_repo_patterns,omitempty"`
 	Summary            string                `yaml:"summary"`
 }
+
+// HiveMessageType represents the type of message in the Hive Mind messaging system.
+type HiveMessageType string
+
+const (
+	HiveMessageRequest  HiveMessageType = "request"
+	HiveMessageResponse HiveMessageType = "response"
+	HiveMessageNotify   HiveMessageType = "notify"
+	HiveMessageQuery    HiveMessageType = "query"
+)
+
+// HiveMessageStatus represents the processing state of a message.
+type HiveMessageStatus string
+
+const (
+	HiveMessagePending   HiveMessageStatus = "pending"
+	HiveMessageDelivered HiveMessageStatus = "delivered"
+	HiveMessageRead      HiveMessageStatus = "read"
+	HiveMessageArchived  HiveMessageStatus = "archived"
+)
+
+// HiveMessage represents a message in the Hive Mind messaging system.
+type HiveMessage struct {
+	ID             string            `yaml:"id"`
+	ConversationID string            `yaml:"conversation_id,omitempty"`
+	From           string            `yaml:"from"`
+	To             string            `yaml:"to"`
+	Subject        string            `yaml:"subject"`
+	Content        string            `yaml:"content"`
+	Type           HiveMessageType   `yaml:"type"`
+	Priority       string            `yaml:"priority"`
+	Date           string            `yaml:"date"`
+	InReplyTo      string            `yaml:"in_reply_to,omitempty"`
+	Tags           []string          `yaml:"tags,omitempty"`
+	Metadata       map[string]string `yaml:"metadata,omitempty"`
+	Status         HiveMessageStatus `yaml:"status"`
+}

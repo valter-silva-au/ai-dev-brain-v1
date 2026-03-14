@@ -1,0 +1,76 @@
+version: "1.0"
+sessions:
+    - id: S-00001
+      session_id: f283b688-ec28-4020-9157-5bd89da106c9
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T12:08:55.366Z
+      ended_at: 2026-02-24T12:53:42.743Z
+      duration: 44m47s
+      turn_count: 274
+      summary: 'I want you to build my project, and create an entire fleet of agent teams to test adb in ALL scenari (274 turns, tools: Bash(46), Read(46), Grep(17), Edit(13), SendMessage(10), Task(10), TaskCreate(10), TaskList(4), TaskUpdate(4), TeamDelete(3), TeamCreate(2), Glob(1), Write(1))'
+    - id: S-00002
+      session_id: 36236507-fc48-401b-a1f2-87a3233aa1e1
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T12:54:18.235Z
+      ended_at: 2026-02-24T13:09:02.144Z
+      duration: 14m43s
+      turn_count: 48
+      summary: |-
+        <command-name>/model</command-name>
+                    <command-message>model</command-message>
+                    (48 turns, tools: Read(12), Grep(7), Bash(6), Task(4), EnterPlanMode(1), ExitPlanMode(1), Write(1))
+    - id: S-00003
+      session_id: 36236507-fc48-401b-a1f2-87a3233aa1e1
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T12:54:18.235Z
+      ended_at: 2026-02-24T14:03:15.41Z
+      duration: 1h8m
+      turn_count: 177
+      summary: |-
+        <command-name>/model</command-name>
+                    <command-message>model</command-message>
+                    (177 turns, tools: Bash(30), Read(22), TaskUpdate(17), Grep(15), Edit(8), TaskCreate(7), Write(5), Task(4), AskUserQuestion(2), EnterPlanMode(1), ExitPlanMode(1))
+    - id: S-00004
+      session_id: d9d48581-5ff9-40cc-b25e-c88824aa807d
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T14:10:42.198Z
+      ended_at: 2026-02-24T14:16:50.097Z
+      duration: 6m7s
+      turn_count: 34
+      summary: 'Role: Act as a Principal Golang Architect and QA Lead. Your goal is to perform a rigorous audit, ref (34 turns, tools: Read(10), Bash(6), Task(3), EnterPlanMode(1), ExitPlanMode(1), Write(1))'
+    - id: S-00005
+      session_id: f4bad9c1-647d-440e-ac65-15f61ca65088
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T21:10:09.075Z
+      ended_at: 2026-02-24T23:25:30.56Z
+      duration: 2h15m
+      turn_count: 168
+      summary: |-
+        Implement the following plan:
+
+        # Plan: Deep Audit, Hooks Simplification, Full Test Coverage, and Cle (168 turns, tools: Bash(41), Read(25), Write(12), Edit(11), Grep(7), TaskUpdate(7), TaskCreate(4), AskUserQuestion(2), Glob(1))
+    - id: S-00006
+      session_id: 66afbd7d-dfb0-4e8c-88c3-cc2446c1a3e4
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T23:43:04.53Z
+      ended_at: 2026-02-24T23:55:30.628Z
+      duration: 12m26s
+      turn_count: 21
+      summary: |-
+        Role: Act as a Principal Golang Architect and CLI Product Owner.
+        Objective: Refactor the adb CLI to  (21 turns, tools: Read(5), Task(4), AskUserQuestion(1), EnterPlanMode(1), ExitPlanMode(1), Write(1))
+    - id: S-00007
+      session_id: 0bbb569a-02c5-4de9-823d-8539f17e5d36
+      project_path: /home/valter/Code/github.com/valter-silva-au/ai-dev-brain
+      git_branch: main
+      started_at: 2026-02-24T23:28:05.088Z
+      ended_at: 2026-02-24T23:28:53.139Z
+      duration: 48s
+      turn_count: 16
+      summary: 'Build my project, create a script that is easy to build it (16 turns, tools: Bash(4), Glob(3), Read(1), Write(1))'

@@ -1,0 +1,187 @@
+turns:
+    - index: 0
+      role: user
+      timestamp: 2026-02-24T23:43:04.53Z
+      content: |-
+        Role: Act as a Principal Golang Architect and CLI Product Owner.
+        Objective: Refactor the adb CLI to reduce cognitive load, enforce Semantic Versioning, and ensure 100% test coverage on critical paths.
+
+        Context: The current CLI has "command sprawl" (30+ commands). We need to unify these into a noun-verb structure and hide internal plumbing.
+
+        Execution Plan - Perform in Order:
+
+        PHASE 1: Semantic Versioning & Discovery
+
+        Check State: Run git fetch --tags. Identify the latest Semantic Version tag (e.g., v1.2.3).
+
+        Determine Next Version:
+
+        If we make breaking CLI changes (renaming commands), target Major (v2.0.0) or Minor (v1.3.0) depending on backward compatibility.
+
+        Set this target version in a variable for the final build/tag step.
+
+        PHASE 2: Architecture Refactoring (The Great Unification)
+
+        Refactor Command Structure: Consolidate the CLI into the following hierarchy. Deprecate old commands with a "moved" warning.
+
+        adb task:
+
+        create <type> (Replaces: bug, feat, spike, refactor)
+
+        lifecycle (Replaces: archive, unarchive, resume, cleanup)
+
+        adb sync:
+
+        Flags: --user, --context, --repos, --all (Replaces: sync-* commands)
+
+        adb internal:
+
+        hook (Replaces: hook, worktree-hook, worktree-lifecycle). Hide these from main help.
+
+        Hooks Redesign: Replace the current recursive/blocking hook system with a Linear Middleware Chain.
+
+        Requirement: Ensure hooks (pre/post-execution) share a context but cannot block indefinitely or trigger infinite loops.
+
+        PHASE 3: Deep Research & QA (Table-Driven)
+
+        Analysis: Scan main.go and cmd/ for flag inconsistencies. Ensure all new unified commands accept standardized flags (e.g., --json, --verbose).
+
+        Test Matrix: Generate a Table-Driven Test suite that covers:
+
+        Happy Paths: adb task create --type=bug "Fix login"
+
+        Edge Cases: Invalid task types, network timeouts during sync, missing git repos.
+
+        Flag Permutations: Test every combination of flags for the new adb sync command.
+
+        Fixes: Auto-correct any error handling gaps found during test generation.
+
+        PHASE 4: Git Operations
+
+        git merge origin/main (Abort if conflicts detected).
+
+        Run the full test suite.
+
+        git commit -am "refactor: unify CLI commands and simplify hooks middleware"
+
+        git tag -a [TARGET_VERSION] -m "Release: Simplified CLI structure"
+
+        git push origin [TARGET_VERSION]
+
+        git push
+      digest: |-
+        Role: Act as a Principal Golang Architect and CLI Product Owner.
+        Objective: Refactor the adb CLI to reduce cognitive load, enforce Semantic Versioning, and ensure 100% test coverage on critical paths.
+    - index: 1
+      role: assistant
+      timestamp: 2026-02-24T23:43:11.394Z
+      content: |4+
+
+    - index: 2
+      role: assistant
+      timestamp: 2026-02-24T23:43:18.964Z
+      content: ""
+      tools_used:
+        - EnterPlanMode
+    - index: 3
+      role: assistant
+      timestamp: 2026-02-24T23:43:23.288Z
+      content: I'll start by exploring the codebase to understand the current CLI structure, command registration patterns, and test coverage before designing the refactoring plan.
+      digest: I'll start by exploring the codebase to understand the current CLI structure, command registration patterns, and test coverage before designing the refactoring plan.
+    - index: 4
+      role: assistant
+      timestamp: 2026-02-24T23:43:27.896Z
+      content: ""
+      tools_used:
+        - Task
+    - index: 5
+      role: assistant
+      timestamp: 2026-02-24T23:43:31.892Z
+      content: ""
+      tools_used:
+        - Task
+    - index: 6
+      role: assistant
+      timestamp: 2026-02-24T23:43:35.896Z
+      content: ""
+      tools_used:
+        - Task
+    - index: 7
+      role: assistant
+      timestamp: 2026-02-24T23:45:08.029Z
+      content: Good, I now have a thorough understanding of the codebase. Let me read a few critical files directly to verify key details before designing the plan.
+      digest: Good, I now have a thorough understanding of the codebase. Let me read a few critical files directly to verify key details before designing the plan.
+    - index: 8
+      role: assistant
+      timestamp: 2026-02-24T23:45:09.151Z
+      content: ""
+      tools_used:
+        - Read
+    - index: 9
+      role: assistant
+      timestamp: 2026-02-24T23:45:09.668Z
+      content: ""
+      tools_used:
+        - Read
+    - index: 10
+      role: assistant
+      timestamp: 2026-02-24T23:45:10.148Z
+      content: ""
+      tools_used:
+        - Read
+    - index: 11
+      role: assistant
+      timestamp: 2026-02-24T23:45:15.215Z
+      content: ""
+      tools_used:
+        - Read
+    - index: 12
+      role: assistant
+      timestamp: 2026-02-24T23:45:15.808Z
+      content: ""
+      tools_used:
+        - Read
+    - index: 13
+      role: assistant
+      timestamp: 2026-02-24T23:45:48.301Z
+      content: Now let me launch a Plan agent to design the implementation approach based on everything I've learned.
+      digest: Now let me launch a Plan agent to design the implementation approach based on everything I've learned.
+    - index: 14
+      role: assistant
+      timestamp: 2026-02-24T23:46:10.069Z
+      content: ""
+      tools_used:
+        - Task
+    - index: 15
+      role: assistant
+      timestamp: 2026-02-24T23:49:46.236Z
+      content: Now let me write the plan file and address the key divergences from the user's request.
+      digest: Now let me write the plan file and address the key divergences from the user's request.
+    - index: 16
+      role: assistant
+      timestamp: 2026-02-24T23:50:21.243Z
+      content: ""
+      tools_used:
+        - Write
+    - index: 17
+      role: assistant
+      timestamp: 2026-02-24T23:50:25.92Z
+      content: 'Before finalizing, I have two key divergences from your original plan that I want to surface:'
+      digest: 'Before finalizing, I have two key divergences from your original plan that I want to surface:'
+    - index: 18
+      role: assistant
+      timestamp: 2026-02-24T23:50:33.637Z
+      content: ""
+      tools_used:
+        - AskUserQuestion
+    - index: 19
+      role: assistant
+      timestamp: 2026-02-24T23:55:27.65Z
+      content: 'Good. Both choices align with the plan. The plan file is complete and reflects these decisions: skip hook rewrite, use subcommands for sync.'
+      digest: 'Good. Both choices align with the plan. The plan file is complete and reflects these decisions: skip hook rewrite, use subcommands for sync.'
+    - index: 20
+      role: assistant
+      timestamp: 2026-02-24T23:55:30.628Z
+      content: ""
+      tools_used:
+        - ExitPlanMode

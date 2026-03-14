@@ -1,402 +1,143 @@
 {
-  "name": "ai-dev-brain",
-  "test_command": "go test ./... -count=1",
+  "name": "adb-hive-mind-phase1",
+  "test_command": "go test ./internal/hive/... ./pkg/models/... -count=1 -race",
   "tasks": [
     {
-      "id": "TASK-001",
-      "title": "Domain models package",
-      "description": "Create pkg/models/ with all shared domain types. Implement: Task struct (ID, Title, Type with enum feat|bug|spike|refactor, Source, Status with enum backlog|in_progress|blocked|review|done|archived, Priority enum P0-P3, Owner, Created/Updated timestamps, Repo, Branch, WorktreePath, TicketPath, Tags []string, BlockedBy []string, Teams, TeamMetadata). Also implement: GlobalConfig (with NotificationConfig, TeamRoutingConfig, HookConfig), RepoConfig, MergedConfig, CLIAliasConfig, Communication, CommunicationTag, CapturedSession, SessionTurn, SessionFilter, SessionCaptureConfig, ExtractedKnowledge, Decision, HandoffDocument. Use YAML struct tags on all persisted fields. Use time.Now().UTC() for timestamps. All types should be in separate files organized by domain area. Include comprehensive unit tests with table-driven subtests.",
+      "id": "HIVE-001",
+      "title": "Add Hive Mind domain models to pkg/models/",
+      "description": "Add new model types for the Hive Mind feature to the existing pkg/models/ package. This is a Go project using go module 'github.com/valter-silva-au/ai-dev-brain'. Create a NEW file pkg/models/hive.go (do NOT modify existing files in pkg/models/). The file must have package declaration 'package models' and define these types with yaml struct tags:\n\n1. ProjectStatus (string type with constants: ProjectActive='active', ProjectArchived='archived', ProjectPaused='paused')\n2. Project struct with fields: Name, RepoPath, Purpose, TechStack ([]string), Status (ProjectStatus), LastUpdated, Tags ([]string), DefaultAI, RelatedProjects ([]string), KnowledgeEntryCount (int), DecisionCount (int), ActiveTaskCount (int) -- all with yaml struct tags\n3. ProjectFilter struct with fields: Status (ProjectStatus), Tags ([]string), TechStack ([]string) -- all with yaml struct tags\n4. AgentType (string type with constants: AgentClaudeCode='claude-code', AgentOpenClaw='openclaw')\n5. AgentStatus (string type with constants: AgentIdle='idle', AgentBusy='busy', AgentOffline='offline')\n6. Agent struct with fields: Name, Type (AgentType), Model, Capabilities ([]string), Role, Status (AgentStatus), LastSeen, HomeProject, ActiveTask, SessionCount (int), MemoryPath, WorkspacePath -- all with yaml struct tags\n7. AgentFilter struct with fields: Type (AgentType), Capabilities ([]string), Status (AgentStatus) -- all with yaml struct tags\n8. HiveKnowledgeResult struct with fields: ID, Project, ProjectPath, LocalID, Type, Topic, Summary, Detail, SourceTask, Date, Tags ([]string) -- all with yaml struct tags\n9. HiveContext struct with fields: CurrentProject (Project), RelatedProjects ([]Project), RelatedKnowledge ([]HiveKnowledgeResult), ActiveAgents ([]Agent), CrossRepoPatterns ([]string), Summary (string) -- all with yaml struct tags\n\nAll yaml tags should be lowercase with underscores (e.g., `yaml:\"repo_path\"`). Use omitempty for optional slice fields.",
       "acceptance_criteria": [
-        "pkg/models/task.go contains Task, TaskType, TaskStatus, Priority types with YAML tags",
-        "pkg/models/config.go contains GlobalConfig, RepoConfig, MergedConfig, CLIAliasConfig, HookConfig, NotificationConfig, TeamRoutingConfig",
-        "pkg/models/session.go contains CapturedSession, SessionTurn, SessionFilter, SessionCaptureConfig",
-        "pkg/models/knowledge.go contains ExtractedKnowledge, Decision, HandoffDocument",
-        "pkg/models/communication.go contains Communication, CommunicationTag",
-        "All types have YAML struct tags",
-        "go test ./pkg/models/... passes"
+        "pkg/models/hive.go exists with package models",
+        "All 9 types defined with yaml struct tags",
+        "go vet ./pkg/models/... passes",
+        "go build ./pkg/models/... passes"
       ],
-      "status": "done",
+      "status": "pending",
       "dependencies": []
     },
     {
-      "id": "TASK-002",
-      "title": "Storage - Backlog manager",
-      "description": "Create internal/storage/backlog.go implementing BacklogManager interface: Load() (*models.Backlog, error), Save(backlog *models.Backlog) error, AddTask(task models.Task) error, UpdateTask(task models.Task) error, GetTask(id string) (*models.Task, error), RemoveTask(id string) error. Persists tasks to backlog.yaml using gopkg.in/yaml.v3. Include file-level locking for concurrent safety. Use os.MkdirAll for directory creation. File permissions: dirs 0o755, files 0o644. Add a Backlog type in pkg/models that wraps []Task. Include comprehensive tests using t.TempDir() for filesystem isolation.",
+      "id": "HIVE-002",
+      "title": "Create ProjectRegistry interface and implementation",
+      "description": "Create the internal/hive/ package with a ProjectRegistry. This is a Go project (module: github.com/valter-silva-au/ai-dev-brain). Create two files:\n\n1. internal/hive/doc.go -- Package documentation: 'Package hive implements the Hive Mind layer for cross-project knowledge sharing and agent coordination.'\n\n2. internal/hive/projectregistry.go -- Contains:\n   - Import 'github.com/valter-silva-au/ai-dev-brain/pkg/models' for the Project and ProjectFilter types\n   - ProjectRegistry interface with methods:\n     * Register(project models.Project) error\n     * Get(repoPathOrName string) (*models.Project, error)\n     * List(filter models.ProjectFilter) ([]models.Project, error)\n     * Load() error\n     * Save() error\n   - projectRegistryStore struct with fields: basePath (string), projects ([]models.Project)\n   - Constructor: NewProjectRegistry(basePath string) ProjectRegistry\n   - Implementation of all interface methods\n   - Storage at basePath + '/projects/index.yaml' using gopkg.in/yaml.v3\n   - The YAML file format is: version: '1.0', projects: [...]\n   - Load() reads the file, Save() writes it atomically (write to .tmp, rename)\n   - Register() adds or updates (match by RepoPath), sets LastUpdated to time.Now().UTC().Format(time.RFC3339)\n   - Get() matches by Name OR RepoPath\n   - List() filters by Status, Tags (any match), TechStack (any match) -- empty filter returns all\n   - File permissions: directories 0o755, files 0o644\n   - Create directories with os.MkdirAll if they don't exist",
       "acceptance_criteria": [
-        "internal/storage/backlog.go implements BacklogManager with Load, Save, AddTask, UpdateTask, GetTask, RemoveTask",
-        "Uses file-level locking for concurrent safety",
-        "Persists to backlog.yaml using YAML format",
-        "File permissions are 0o644 for files, 0o755 for directories",
-        "Tests use t.TempDir() for isolation",
-        "go test ./internal/storage/... passes"
+        "internal/hive/doc.go exists",
+        "internal/hive/projectregistry.go exists",
+        "ProjectRegistry interface defined with 5 methods",
+        "NewProjectRegistry constructor returns ProjectRegistry interface",
+        "go build ./internal/hive/... passes",
+        "go vet ./internal/hive/... passes"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-001"]
     },
     {
-      "id": "TASK-003",
-      "title": "Storage - Context manager",
-      "description": "Create internal/storage/context.go implementing ContextManager interface: ReadContext(taskID string) (string, error), WriteContext(taskID string, content string) error, AppendContext(taskID string, section string) error, ReadNotes(taskID string) (string, error), WriteNotes(taskID string, content string) error. Operates on per-task directories: tickets/TASK-XXXXX/context.md and notes.md. Support append operations for hook-driven updates. Include unit tests with t.TempDir().",
+      "id": "HIVE-003",
+      "title": "Create ProjectRegistry unit tests",
+      "description": "Create internal/hive/projectregistry_test.go with unit tests for the ProjectRegistry. Use standard Go testing with table-driven subtests. Every test must use t.TempDir() for filesystem isolation.\n\nTest cases:\n1. TestProjectRegistry_RegisterAndGet -- register a project, get by name, get by repo path, verify all fields\n2. TestProjectRegistry_RegisterUpdate -- register same project twice (same RepoPath), verify it updates rather than duplicates\n3. TestProjectRegistry_ListAll -- register 3 projects, list with empty filter, verify all 3 returned\n4. TestProjectRegistry_ListFilterByStatus -- register 3 projects with different statuses, filter by 'active', verify only active returned\n5. TestProjectRegistry_ListFilterByTags -- register projects with different tags, filter by tag, verify matches\n6. TestProjectRegistry_ListFilterByTechStack -- register projects with different tech stacks, filter by 'go', verify matches\n7. TestProjectRegistry_SaveAndLoad -- register projects, save, create new registry at same path, load, verify projects match\n8. TestProjectRegistry_GetNotFound -- get a nonexistent project, verify nil returned with no error (or appropriate error)\n9. TestProjectRegistry_EmptyRegistry -- list on empty registry returns empty slice, not nil\n\nUse models.Project from github.com/valter-silva-au/ai-dev-brain/pkg/models.",
       "acceptance_criteria": [
-        "internal/storage/context.go implements ContextManager",
-        "Reads/writes context.md and notes.md per task directory",
-        "AppendContext supports incremental updates",
-        "File permissions 0o644",
-        "go test ./internal/storage/... passes"
+        "internal/hive/projectregistry_test.go exists",
+        "At least 9 test functions",
+        "All tests pass: go test ./internal/hive/... -count=1 -race",
+        "Tests use t.TempDir() for isolation"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-002"]
     },
     {
-      "id": "TASK-004",
-      "title": "Storage - Communication and Session store managers",
-      "description": "Create internal/storage/communication.go implementing CommunicationManager: stores stakeholder communications as dated markdown files under tickets/TASK-XXXXX/communications/. Create internal/storage/sessionstore.go implementing SessionStoreManager: workspace-level captured session storage with YAML index (sessions/index.yaml) and per-session directories (sessions/S-XXXXX/ with session.yaml, turns.yaml, summary.md). Sequential session ID counter. Include tests.",
+      "id": "HIVE-004",
+      "title": "Create KnowledgeAggregator interface and implementation",
+      "description": "Create internal/hive/knowledgeaggregator.go in the existing internal/hive/ package. This aggregates knowledge across multiple project directories.\n\nCreate:\n- SearchOptions struct with fields: ProjectFilter ([]string), TypeFilter ([]string), Since (time.Time), Limit (int) -- all with yaml struct tags\n- KnowledgeAggregator interface with methods:\n  * SearchAcrossProjects(query string, opts SearchOptions) ([]models.HiveKnowledgeResult, error)\n  * GetDecisionsForTopic(topic string) ([]models.HiveKnowledgeResult, error)\n  * Index() error\n  * Load() error\n  * Save() error\n- knowledgeAggregatorStore struct with fields: basePath (string), projectReg (ProjectRegistry), entries ([]models.HiveKnowledgeResult), indexedAt (time.Time)\n- Constructor: NewKnowledgeAggregator(basePath string, projectReg ProjectRegistry) KnowledgeAggregator\n\nImplementation details:\n- Storage at basePath + '/hive-mind/knowledge/index.yaml'\n- YAML format: version: '1.0', indexed_at: timestamp, entries: [...]\n- Index() walks all projects from ProjectRegistry, for each project reads '{project.RepoPath}/docs/knowledge/index.yaml' if it exists. Each knowledge entry has fields: id, type, topic, summary, detail, source_task, source_type, date. Namespace IDs as '{projectName}::{localID}'. Store results in entries slice.\n- SearchAcrossProjects() does case-insensitive substring match on Summary and Topic fields. Respects ProjectFilter, TypeFilter, and Limit from SearchOptions.\n- GetDecisionsForTopic() filters entries where Type=='decision' and Topic contains the query (case-insensitive)\n- Load()/Save() read/write the index.yaml file using yaml.v3\n- Use os.MkdirAll for directories, atomic writes (tmp + rename)\n- File permissions: dirs 0o755, files 0o644\n\nImport the existing knowledge YAML format. Read internal/core/knowledge.go to see the ExtractedKnowledge type for reference -- but do NOT import from core. Use the HiveKnowledgeResult model from pkg/models/hive.go.\n\nFor parsing project knowledge files, define a local struct to unmarshal the YAML:\n```go\ntype knowledgeIndex struct {\n    Version string `yaml:\"version\"`\n    Entries []struct {\n        ID         string `yaml:\"id\"`\n        Type       string `yaml:\"type\"`\n        Topic      string `yaml:\"topic\"`\n        Summary    string `yaml:\"summary\"`\n        Detail     string `yaml:\"detail\"`\n        SourceTask string `yaml:\"source_task\"`\n        SourceType string `yaml:\"source_type\"`\n        Date       string `yaml:\"date\"`\n    } `yaml:\"entries\"`\n}\n```",
       "acceptance_criteria": [
-        "internal/storage/communication.go stores dated markdown files in communications/",
-        "internal/storage/sessionstore.go manages sessions with YAML index",
-        "Session directories follow S-XXXXX naming pattern",
-        "go test ./internal/storage/... passes"
+        "internal/hive/knowledgeaggregator.go exists",
+        "KnowledgeAggregator interface defined with 5 methods",
+        "NewKnowledgeAggregator constructor returns KnowledgeAggregator interface",
+        "go build ./internal/hive/... passes",
+        "go vet ./internal/hive/... passes"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-002"]
     },
     {
-      "id": "TASK-005",
-      "title": "Core - Task ID generator",
-      "description": "Create internal/core/taskid.go implementing TaskIDGenerator interface with GenerateTaskID() (string, error). Uses sequential IDs with file-based counter and flock locking. Format: {prefix}-{counter:05d} (e.g., TASK-00001). Counter stored in .task_counter plain text file. The prefix should be configurable. Include comprehensive tests including concurrent generation tests.",
+      "id": "HIVE-005",
+      "title": "Create KnowledgeAggregator unit tests",
+      "description": "Create internal/hive/knowledgeaggregator_test.go with unit tests. Use standard Go testing with table-driven subtests. Every test uses t.TempDir() for filesystem isolation.\n\nFor tests that need project knowledge, create the directory structure in the temp dir:\n- Create a fake project dir with docs/knowledge/index.yaml containing test knowledge entries\n- Register the project via ProjectRegistry before testing aggregation\n\nTest cases:\n1. TestKnowledgeAggregator_IndexEmptyRegistry -- index with no projects, verify no entries\n2. TestKnowledgeAggregator_IndexSingleProject -- create a project dir with docs/knowledge/index.yaml containing 3 entries, register it, index, verify 3 entries in aggregator with namespaced IDs\n3. TestKnowledgeAggregator_IndexMultipleProjects -- create 2 project dirs with knowledge, register both, index, verify entries from both projects\n4. TestKnowledgeAggregator_SearchByQuery -- index projects, search for a term in summary, verify matching results\n5. TestKnowledgeAggregator_SearchCaseInsensitive -- search with different case, verify matches\n6. TestKnowledgeAggregator_SearchFilterByProject -- search with ProjectFilter set, verify only matching project's results\n7. TestKnowledgeAggregator_SearchFilterByType -- search with TypeFilter set to 'decision', verify only decisions returned\n8. TestKnowledgeAggregator_SearchWithLimit -- search with Limit=2, verify at most 2 results\n9. TestKnowledgeAggregator_GetDecisionsForTopic -- add decisions with topics, query by topic, verify correct results\n10. TestKnowledgeAggregator_SaveAndLoad -- index, save, create new aggregator, load, verify entries match\n11. TestKnowledgeAggregator_ProjectWithNoKnowledge -- project exists but has no docs/knowledge/index.yaml, index should skip gracefully\n\nThe YAML format for test knowledge files:\n```yaml\nversion: \"1.0\"\nentries:\n  - id: K-00001\n    type: decision\n    topic: architecture\n    summary: Use local interfaces to avoid import cycles\n    detail: detailed explanation\n    source_task: TASK-00005\n    source_type: task_archive\n    date: \"2026-02-01\"\n```",
       "acceptance_criteria": [
-        "internal/core/taskid.go generates sequential task IDs",
-        "Uses file-based counter with flock locking",
-        "Format is {prefix}-{counter:05d}",
-        "Counter persists in .task_counter file",
-        "Prefix is configurable",
-        "Tests include concurrent ID generation",
-        "go test ./internal/core/... passes"
+        "internal/hive/knowledgeaggregator_test.go exists",
+        "At least 10 test functions",
+        "All tests pass: go test ./internal/hive/... -count=1 -race",
+        "Tests use t.TempDir() for isolation"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-004"]
     },
     {
-      "id": "TASK-006",
-      "title": "Core - Configuration manager",
-      "description": "Create internal/core/config.go implementing ConfigurationManager using github.com/spf13/viper. Two config layers: .taskconfig (global config - task ID prefix/counter, defaults, aliases, notifications, hooks) and .taskrc (per-repo config - build/test commands, reviewers, conventions). Precedence: .taskrc > .taskconfig > defaults. Expose a MergedConfig that combines both layers. Include DefaultHookConfig() that enables Phase 1 features with Phase 2/3 opt-in. Include tests.",
+      "id": "HIVE-006",
+      "title": "Create AgentRegistry interface and implementation",
+      "description": "Create internal/hive/agentregistry.go in the existing internal/hive/ package.\n\nCreate:\n- AgentRegistry interface with methods:\n  * Register(agent models.Agent) error\n  * Get(name string) (*models.Agent, error)\n  * List(filter models.AgentFilter) ([]models.Agent, error)\n  * DiscoverOpenClaw(openclawPath string) ([]models.Agent, error)\n  * Load() error\n  * Save() error\n- agentRegistryStore struct with fields: basePath (string), agents ([]models.Agent)\n- Constructor: NewAgentRegistry(basePath string) AgentRegistry\n\nImplementation:\n- Storage at basePath + '/agents/index.yaml'\n- YAML format: version: '1.0', agents: [...]\n- Register() adds or updates (match by Name), sets LastSeen to time.Now().UTC().Format(time.RFC3339)\n- Get() matches by Name (case-insensitive)\n- List() filters by Type, Capabilities (any match), Status -- empty filter returns all\n- DiscoverOpenClaw(openclawPath) reads openclawPath + '/openclaw.json' to discover agents:\n  * Parse the JSON: agents.list is an array of objects with 'id', 'name', 'workspace', 'agentDir' fields\n  * For each agent entry, try to read agentDir + '/SOUL.md' for capabilities (extract first line after '## Objective' or '## Core Behaviors')\n  * Create models.Agent with Type=models.AgentOpenClaw, Model read from config defaults, Status=models.AgentIdle\n  * Return discovered agents (do NOT auto-register them)\n- Load()/Save() read/write index.yaml\n- Atomic writes, os.MkdirAll, permissions 0o755/0o644\n\nFor JSON parsing of openclaw.json, define local structs:\n```go\ntype openclawConfig struct {\n    Agents struct {\n        Defaults struct {\n            Model struct {\n                Primary string `json:\"primary\"`\n            } `json:\"model\"`\n        } `json:\"defaults\"`\n        List []struct {\n            ID        string `json:\"id\"`\n            Name      string `json:\"name\"`\n            Workspace string `json:\"workspace\"`\n            AgentDir  string `json:\"agentDir\"`\n        } `json:\"list\"`\n    } `json:\"agents\"`\n}\n```",
       "acceptance_criteria": [
-        "internal/core/config.go uses Viper for configuration",
-        "Loads .taskconfig (global) and .taskrc (per-repo)",
-        "Precedence: .taskrc > .taskconfig > defaults",
-        "Returns MergedConfig combining both layers",
-        "DefaultHookConfig() returns sensible defaults",
-        "go test ./internal/core/... passes"
+        "internal/hive/agentregistry.go exists",
+        "AgentRegistry interface defined with 6 methods",
+        "NewAgentRegistry constructor returns AgentRegistry interface",
+        "DiscoverOpenClaw parses openclaw.json format",
+        "go build ./internal/hive/... passes",
+        "go vet ./internal/hive/... passes"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-001"]
     },
     {
-      "id": "TASK-007",
-      "title": "Core - Template manager",
-      "description": "Create internal/core/templates.go implementing TemplateManager: type-specific templates for notes.md, design.md, handoff.md, status.yaml using Go's text/template. Templates should be embedded via //go:embed in a templates/ directory. Create templates/claude/embed.go exporting FS as embed.FS. Include template files for notes (with acceptance criteria sections), design (with architecture sections), and handoff (with summary, decisions, open items). Always use path.Join (not filepath.Join) when reading from embed.FS. Include tests.",
+      "id": "HIVE-007",
+      "title": "Create AgentRegistry unit tests",
+      "description": "Create internal/hive/agentregistry_test.go with unit tests. Use standard Go testing with table-driven subtests. Every test uses t.TempDir().\n\nTest cases:\n1. TestAgentRegistry_RegisterAndGet -- register an agent, get by name, verify fields\n2. TestAgentRegistry_RegisterUpdate -- register same agent twice, verify update not duplicate\n3. TestAgentRegistry_GetCaseInsensitive -- register 'Nexus', get 'nexus', verify found\n4. TestAgentRegistry_ListAll -- register 3 agents, list with empty filter, verify all returned\n5. TestAgentRegistry_ListFilterByType -- register mixed types, filter by 'openclaw', verify\n6. TestAgentRegistry_ListFilterByCapabilities -- filter by capability, verify only matching agents\n7. TestAgentRegistry_ListFilterByStatus -- filter by 'idle', verify\n8. TestAgentRegistry_SaveAndLoad -- register agents, save, new registry, load, verify\n9. TestAgentRegistry_GetNotFound -- get nonexistent, verify nil\n10. TestAgentRegistry_DiscoverOpenClaw -- create a minimal openclaw.json in temp dir with 2 agents, call DiscoverOpenClaw, verify 2 agents returned with correct types\n11. TestAgentRegistry_DiscoverOpenClawMissingFile -- call DiscoverOpenClaw on nonexistent path, verify graceful error\n\nThe test openclaw.json format:\n```json\n{\n  \"agents\": {\n    \"defaults\": {\n      \"model\": {\n        \"primary\": \"amazon-bedrock/us.anthropic.claude-opus-4-6-v1\"\n      }\n    },\n    \"list\": [\n      {\"id\": \"coder\", \"name\": \"coder\", \"workspace\": \"/tmp/ws-coder\"},\n      {\"id\": \"producer\", \"name\": \"producer\", \"workspace\": \"/tmp/ws-producer\"}\n    ]\n  }\n}\n```",
       "acceptance_criteria": [
-        "internal/core/templates.go renders templates via text/template",
-        "templates/claude/embed.go exports FS as embed.FS",
-        "Template files for notes.md, design.md, handoff.md exist",
-        "Uses path.Join for embed.FS paths",
-        "go test ./internal/core/... passes"
+        "internal/hive/agentregistry_test.go exists",
+        "At least 10 test functions",
+        "All tests pass: go test ./internal/hive/... -count=1 -race",
+        "Tests use t.TempDir() for isolation"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-006"]
     },
     {
-      "id": "TASK-008",
-      "title": "Core - Bootstrap system",
-      "description": "Create internal/core/bootstrap.go implementing BootstrapSystem. Scaffolds a new task's directory structure: tickets/TASK-XXXXX/ with status.yaml, context.md, notes.md, design.md, sessions/, knowledge/ subdirectories. Also generates .claude/rules/task-context.md inside the worktree so the AI assistant knows what task it's working on. Uses TemplateManager for file content. knowledge/ contains decisions.yaml (initially empty). Include tests verifying all directories and files are created.",
+      "id": "HIVE-008",
+      "title": "Create MessageBus interface and implementation",
+      "description": "Create internal/hive/messagebus.go in the existing internal/hive/ package. This is a file-based pub/sub messaging system.\n\nFirst, add to pkg/models/hive.go (the file created in HIVE-001) a new type HiveMessageType and HiveMessageStatus:\n```go\ntype HiveMessageType string\nconst (\n    HiveMessageRequest  HiveMessageType = \"request\"\n    HiveMessageResponse HiveMessageType = \"response\"\n    HiveMessageNotify   HiveMessageType = \"notify\"\n    HiveMessageQuery    HiveMessageType = \"query\"\n)\n\ntype HiveMessageStatus string\nconst (\n    HiveMessagePending   HiveMessageStatus = \"pending\"\n    HiveMessageDelivered HiveMessageStatus = \"delivered\"\n    HiveMessageRead      HiveMessageStatus = \"read\"\n    HiveMessageArchived  HiveMessageStatus = \"archived\"\n)\n\ntype HiveMessage struct {\n    ID             string            `yaml:\"id\"`\n    ConversationID string            `yaml:\"conversation_id,omitempty\"`\n    From           string            `yaml:\"from\"`\n    To             string            `yaml:\"to\"`\n    Subject        string            `yaml:\"subject\"`\n    Content        string            `yaml:\"content\"`\n    Type           HiveMessageType   `yaml:\"type\"`\n    Priority       string            `yaml:\"priority\"`\n    Date           string            `yaml:\"date\"`\n    InReplyTo      string            `yaml:\"in_reply_to,omitempty\"`\n    Tags           []string          `yaml:\"tags,omitempty\"`\n    Metadata       map[string]string `yaml:\"metadata,omitempty\"`\n    Status         HiveMessageStatus `yaml:\"status\"`\n}\n```\n\nThen create internal/hive/messagebus.go:\n- MessageBus interface with methods:\n  * Publish(msg models.HiveMessage) error\n  * Subscribe(recipient string) ([]models.HiveMessage, error)\n  * MarkProcessed(messageID string) error\n  * GetConversation(conversationID string) ([]models.HiveMessage, error)\n- messageBusStore struct with fields: basePath (string), counter (int)\n- Constructor: NewMessageBus(basePath string) MessageBus\n\nImplementation:\n- Messages stored as individual YAML files\n- Inbox: basePath + '/channels/inbox/{recipient}/{message-id}.yaml'\n- Archive: basePath + '/channels/archive/{year}/{month}/{message-id}.yaml'\n- Publish(): auto-generate ID as 'MSG-{counter:05d}', set Date to now UTC, Status to 'pending', write to inbox/{msg.To}/{id}.yaml\n- Subscribe(): read all .yaml files from inbox/{recipient}/, parse, sort by Date, return\n- MarkProcessed(): find message in any inbox, move to archive/{year}/{month}/\n- GetConversation(): scan inbox and archive for messages with matching ConversationID\n- Counter stored in basePath + '/.hive_counter' (same pattern as .task_counter: read int, increment, write)\n- Atomic writes, os.MkdirAll, permissions 0o755/0o644",
       "acceptance_criteria": [
-        "internal/core/bootstrap.go scaffolds tickets/TASK-XXXXX/ directory tree",
-        "Creates status.yaml, context.md, notes.md, design.md",
-        "Creates sessions/ and knowledge/ subdirectories",
-        "Generates .claude/rules/task-context.md in worktree",
-        "Uses TemplateManager for template rendering",
-        "go test ./internal/core/... passes"
+        "pkg/models/hive.go updated with HiveMessage, HiveMessageType, HiveMessageStatus",
+        "internal/hive/messagebus.go exists",
+        "MessageBus interface defined with 4 methods",
+        "NewMessageBus constructor returns MessageBus interface",
+        "go build ./internal/hive/... passes",
+        "go vet ./internal/hive/... passes"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-005",
-        "TASK-006",
-        "TASK-007"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-001"]
     },
     {
-      "id": "TASK-009",
-      "title": "Integration - Git worktree manager",
-      "description": "Create internal/integration/worktree.go implementing GitWorktreeManager: CreateWorktree (handles local paths and platform/org/repo identifiers, clones repos if needed with HTTPS first SSH fallback, creates worktree with new branch from base branch), RemoveWorktree (force-remove, resolve parent repo from .git file), ListWorktrees (parse 'git worktree list --porcelain'), GetWorktreeForTask (checks basePath/work/{taskID}), NormalizeRepoPath (converts various URL formats to canonical platform/org/repo). Multi-repo: repos cloned to repos/{platform}/{org}/{repo}. Worktrees at basePath/work/{taskID}. All git operations via os/exec (no go-git library). Include tests.",
+      "id": "HIVE-009",
+      "title": "Create MessageBus unit tests",
+      "description": "Create internal/hive/messagebus_test.go with unit tests. Use standard Go testing with table-driven subtests. Every test uses t.TempDir().\n\nTest cases:\n1. TestMessageBus_PublishAndSubscribe -- publish a message, subscribe for recipient, verify message received with auto-generated ID and date\n2. TestMessageBus_PublishMultiple -- publish 3 messages to same recipient, subscribe, verify all 3 returned sorted by date\n3. TestMessageBus_SubscribeEmpty -- subscribe for nonexistent recipient, verify empty slice returned (not nil)\n4. TestMessageBus_SubscribeDifferentRecipients -- publish to agent-a and agent-b, subscribe for agent-a, verify only agent-a's messages\n5. TestMessageBus_MarkProcessed -- publish message, mark processed, subscribe again, verify message no longer in inbox\n6. TestMessageBus_MarkProcessedCreatesArchive -- mark processed, verify file exists in archive/{year}/{month}/ directory\n7. TestMessageBus_GetConversation -- publish 3 messages with same ConversationID, get conversation, verify all 3 returned\n8. TestMessageBus_GetConversationMixed -- publish messages with different ConversationIDs, get one conversation, verify only matching returned\n9. TestMessageBus_AutoIncrementID -- publish 3 messages, verify IDs are MSG-00001, MSG-00002, MSG-00003\n10. TestMessageBus_CounterPersistence -- publish message, create new MessageBus at same path, publish another, verify ID continues from previous counter\n\nFor creating test messages, use:\n```go\nmsg := models.HiveMessage{\n    From:    \"team-lead\",\n    To:      \"researcher\",\n    Subject: \"Research React hooks\",\n    Content: \"Please research React hooks best practices\",\n    Type:    models.HiveMessageRequest,\n    Priority: \"P1\",\n}\n```",
       "acceptance_criteria": [
-        "internal/integration/worktree.go implements CreateWorktree, RemoveWorktree, ListWorktrees, GetWorktreeForTask",
-        "NormalizeRepoPath handles HTTPS URLs, SSH URLs, and relative paths",
-        "Worktrees created at basePath/work/{taskID}",
-        "Uses os/exec for git operations (no go-git)",
-        "go test ./internal/integration/... passes"
+        "internal/hive/messagebus_test.go exists",
+        "At least 10 test functions",
+        "All tests pass: go test ./internal/hive/... -count=1 -race",
+        "Tests use t.TempDir() for isolation"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-008"]
     },
     {
-      "id": "TASK-010",
-      "title": "Integration - CLI executor and terminal utilities",
-      "description": "Create internal/integration/cliexec.go implementing CLIExecutor: alias resolution from config, task env injection (ADB_TASK_ID, ADB_BRANCH, ADB_WORKTREE_PATH, ADB_TICKET_PATH), pipe support (commands with | delegate to sh -c), failure logging to context.md, output capture via io.MultiWriter. Create internal/integration/tab.go implementing TabManager: terminal tab renaming via ANSI OSC 0 sequences. Create internal/integration/terminalstate.go implementing TerminalStateWriter: manages .adb_terminal_state.json for VS Code tab styling, thread-safe via mutex, auto-cleans entries for non-existent worktrees, handles corrupt JSON by resetting. Include tests.",
+      "id": "HIVE-010",
+      "title": "Create Hive Mind integration test",
+      "description": "Create internal/hive/integration_test.go with integration tests that exercise the full Hive Mind workflow: project registration, knowledge indexing, agent discovery, and messaging.\n\nTest cases:\n1. TestIntegration_FullWorkflow:\n   - Create temp dir as basePath\n   - Create 2 fake project directories under basePath with:\n     * docs/knowledge/index.yaml containing 2-3 knowledge entries each\n   - Create a fake openclaw directory with openclaw.json containing 2 agents\n   - Create ProjectRegistry, register both projects\n   - Create KnowledgeAggregator, index\n   - Verify: search returns entries from both projects\n   - Create AgentRegistry, discover from fake openclaw dir\n   - Register discovered agents\n   - Verify: list agents returns both\n   - Create MessageBus, publish message from one agent to another\n   - Subscribe for recipient, verify message received\n   - Mark processed, verify inbox empty\n\n2. TestIntegration_SaveLoadRoundTrip:\n   - Register projects, agents, index knowledge\n   - Save all registries\n   - Create fresh instances at same path\n   - Load all\n   - Verify all data survived the round trip\n\n3. TestIntegration_EmptyEcosystem:\n   - Create all components with empty basePath\n   - Verify all operations return empty results, not errors\n   - Verify no panics on empty state\n\nUse t.TempDir() for all tests. Import from internal/hive and pkg/models only.",
       "acceptance_criteria": [
-        "internal/integration/cliexec.go implements CLIExecutor with alias resolution and env injection",
-        "internal/integration/tab.go renames terminal tabs via ANSI OSC 0",
-        "internal/integration/terminalstate.go manages .adb_terminal_state.json thread-safely",
-        "Pipe commands delegate to shell",
-        "go test ./internal/integration/... passes"
+        "internal/hive/integration_test.go exists",
+        "At least 3 integration test functions",
+        "All tests pass: go test ./internal/hive/... -count=1 -race",
+        "Tests exercise ProjectRegistry + KnowledgeAggregator + AgentRegistry + MessageBus together"
       ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001",
-        "TASK-006"
-      ]
-    },
-    {
-      "id": "TASK-011",
-      "title": "Integration - Transcript parser and other utilities",
-      "description": "Create internal/integration/transcript.go implementing TranscriptParser: parses Claude Code JSONL session transcripts into TranscriptResult (turns, summary, timestamps, tool usage stats). Uses large scanner buffer (64KB initial, 10MB max). Detects schema version from first 5 lines. StructuralSummarizer generates non-LLM summaries. Create internal/integration/version.go: semver parsing with regex, feature gates map. Create internal/integration/offline.go: TCP dial connectivity check with timeout. Create internal/integration/mcpclient.go: HTTP GET health checks for MCP servers with TTL cache. Include tests.",
-      "acceptance_criteria": [
-        "internal/integration/transcript.go parses JSONL transcripts into structured data",
-        "Uses 64KB initial / 10MB max scanner buffer",
-        "internal/integration/version.go provides semver parsing and feature gates",
-        "internal/integration/offline.go checks connectivity via TCP dial",
-        "internal/integration/mcpclient.go checks MCP server health with cache",
-        "go test ./internal/integration/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
-    },
-    {
-      "id": "TASK-012",
-      "title": "Observability - Event log, metrics, and alerts",
-      "description": "Create internal/observability/eventlog.go: append-only JSONL file (.adb_events.jsonl), thread-safe writes via mutex, gracefully skips malformed lines on read, non-fatal if log file can't be created. Event types: task.created, task.completed, task.status_changed, agent.session_started, knowledge.extracted, worktree.created, worktree.removed. Create internal/observability/metrics.go: derives aggregated metrics on-demand from event log (tasks created/completed, by status/type, agent sessions). Create internal/observability/alerting.go: evaluates conditions against configurable thresholds (task_blocked_too_long 24h High, task_stale 3d Medium, review_too_long 5d Medium, backlog_too_large 10 tasks Low). Include tests.",
-      "acceptance_criteria": [
-        "internal/observability/eventlog.go writes append-only JSONL, thread-safe",
-        "Non-fatal: observability failures don't crash the CLI",
-        "internal/observability/metrics.go computes metrics on-demand from event log",
-        "internal/observability/alerting.go evaluates alert conditions against thresholds",
-        "Thresholds are configurable",
-        "go test ./internal/observability/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-001"
-      ]
-    },
-    {
-      "id": "TASK-013",
-      "title": "Core - Task manager (lifecycle orchestration)",
-      "description": "Create internal/core/taskmanager.go implementing TaskManager. Define local interfaces: BacklogStore, ContextStore, WorktreeCreator, WorktreeRemover, EventLogger, SessionCapturer, TerminalStateUpdater. Implement task lifecycle: Create (generate task ID, add to backlog, bootstrap dirs, create worktree, write terminal state, log event), Resume (load task, check not archived, promote backlog->in_progress, get worktree path), Archive (generate handoff.md from template, move ticket to _archived/, remove worktree, update backlog to archived), Unarchive (move back, update to backlog), UpdateStatus/Priority, Cleanup (remove worktree only), Delete (full removal). CreateTaskOpts: Priority, Owner, Tags, Prefix, Repo. Include tests with mock implementations of all interfaces.",
-      "acceptance_criteria": [
-        "internal/core/taskmanager.go defines local interfaces (BacklogStore, ContextStore, WorktreeCreator, etc.)",
-        "Implements Create, Resume, Archive, Unarchive, UpdateStatus, UpdatePriority, Cleanup, Delete",
-        "Create generates ID, bootstraps dirs, creates worktree, logs event",
-        "Archive generates handoff.md, moves to _archived/, removes worktree",
-        "Tests use mock implementations of all interfaces",
-        "go test ./internal/core/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-002",
-        "TASK-003",
-        "TASK-005",
-        "TASK-008",
-        "TASK-009",
-        "TASK-012"
-      ]
-    },
-    {
-      "id": "TASK-014",
-      "title": "App wiring with adapter pattern",
-      "description": "Create internal/app.go implementing the App struct with dependency wiring. This is the single source of truth for dependency injection. Create adapter structs that bridge core's local interfaces to real implementations (e.g., backlogStoreAdapter bridges core.BacklogStore to storage.BacklogManager). NewApp(basePath) constructs everything in dependency order. Organize fields by category: Configuration, Storage, Core Services, Integration, Observability. Set CLI package-level variables after construction. The adapter pattern prevents circular imports: Core defines interfaces, implementations live in storage/integration/observability, app.go bridges them. Include integration tests.",
-      "acceptance_criteria": [
-        "internal/app.go defines App struct with all subsystem fields",
-        "Adapter structs bridge core interfaces to real implementations",
-        "NewApp(basePath) constructs everything in dependency order",
-        "No circular imports between packages",
-        "Sets CLI package-level variables",
-        "go test ./internal/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-013",
-        "TASK-010",
-        "TASK-011"
-      ]
-    },
-    {
-      "id": "TASK-015",
-      "title": "CLI - Cobra commands (task lifecycle)",
-      "description": "Create internal/cli/ package with Cobra commands. Dependencies arrive through package-level variables set by app.go (create internal/cli/vars.go). Implement noun-verb pattern: 'adb task create <branch> --type=feat|bug|spike|refactor [--repo] [--priority] [--owner] [--tags]', 'adb task resume <task-id>', 'adb task archive <task-id> [--force] [--keep-worktree]', 'adb task unarchive <task-id>', 'adb task cleanup <task-id>', 'adb task status [--filter <status>]', 'adb task priority <task-id>...', 'adb task update <task-id>'. Create cmd/adb/main.go as entry point that parses ldflags (VERSION, COMMIT, DATE), resolves base path (ADB_HOME env or walk up looking for .taskconfig), creates App, executes CLI. The launchWorkflow function renames terminal tab, updates terminal state, launches Claude Code in worktree, drops user into interactive shell. Include tests for argument parsing.",
-      "acceptance_criteria": [
-        "internal/cli/vars.go defines package-level variables for dependencies",
-        "Cobra commands implement 'adb task {create,resume,archive,unarchive,cleanup,status,priority,update}'",
-        "cmd/adb/main.go resolves base path and wires App to CLI",
-        "launchWorkflow launches Claude Code in worktree",
-        "go build ./cmd/adb/ succeeds",
-        "go test ./internal/cli/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-014"
-      ]
-    },
-    {
-      "id": "TASK-016",
-      "title": "CLI - Sync, init, exec, run, metrics, alerts, dashboard commands",
-      "description": "Add remaining CLI commands: 'adb sync context' (regenerate CLAUDE.md), 'adb sync task-context [--hook-mode]', 'adb sync repos', 'adb sync claude-user [--dry-run] [--mcp]', 'adb sync all', 'adb init [path] [--name] [--ai] [--prefix]' (full workspace scaffolding), 'adb init claude [path] [--managed]', 'adb exec <cli> [args...]' (runs via CLIExecutor), 'adb run <task-name>' (TaskfileRunner), 'adb metrics [--json] [--since 7d]', 'adb alerts [--notify]', 'adb dashboard' (TUI using charmbracelet/bubbletea), 'adb version'. Include tests.",
-      "acceptance_criteria": [
-        "Sync commands regenerate context files",
-        "Init command scaffolds workspace with templates",
-        "Exec delegates to CLIExecutor with env injection",
-        "Metrics and alerts commands display data from observability",
-        "Dashboard uses bubbletea for TUI",
-        "go build ./cmd/adb/ succeeds",
-        "go test ./internal/cli/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-015"
-      ]
-    },
-    {
-      "id": "TASK-017",
-      "title": "Hook engine and shell wrappers",
-      "description": "Create internal/core/hookengine.go implementing HookEngine: processes Claude Code hook events with hybrid shell/Go architecture. Shell wrappers (.claude/hooks/adb-hook-*.sh) set ADB_HOOK_ACTIVE=1 and pipe stdin to 'adb hook <type>'. Go binary does validation, formatting, tracking, knowledge work. Recursion prevented by checking ADB_HOOK_ACTIVE env var. Hook types: PreToolUse (blocking, blocks vendor/go.sum edits), PostToolUse (non-blocking, auto-formats Go with gofmt, tracks changes to .adb_session_changes), Stop (advisory, checks uncommitted changes/build/vet, updates context.md), TaskCompleted (two-phase: Phase A blocking quality gates, Phase B non-blocking knowledge extraction), SessionEnd (captures transcript, updates context.md). Create internal/hooks/stdin.go (generic ParseStdin[T] for JSON payloads), tracker.go (ChangeTracker for .adb_session_changes), artifacts.go (context append helpers). Create CLI command 'adb hook {install,status,pre-tool-use,post-tool-use,stop,task-completed,session-end}'. Include tests.",
-      "acceptance_criteria": [
-        "internal/core/hookengine.go processes all hook types",
-        "PreToolUse blocks vendor/ and go.sum edits",
-        "PostToolUse auto-formats Go files and tracks changes",
-        "TaskCompleted has two phases: blocking quality gates + non-blocking knowledge extraction",
-        "internal/hooks/ provides ParseStdin, ChangeTracker, artifacts helpers",
-        "Shell wrappers prevent recursion via ADB_HOOK_ACTIVE",
-        "adb hook install deploys wrappers to .claude/hooks/",
-        "go test ./... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-015"
-      ]
-    },
-    {
-      "id": "TASK-018",
-      "title": "AI context generator",
-      "description": "Create internal/core/aicontext.go implementing AIContextGenerator: generates root-level CLAUDE.md by assembling sections: Project Overview (hardcoded summary), Directory Structure (hardcoded tree), Conventions (from docs/wiki/*convention*.md files), Glossary (from docs/glossary.md), Decisions Summary (from docs/decisions/*.md, accepted ADRs only), Active Tasks (from backlog.yaml filtered by active statuses), Critical Decisions (from tickets/*/knowledge/decisions.yaml of active tasks), Recent Sessions (latest tickets/*/sessions/*.md truncated to 20 lines), Captured Sessions (from workspace sessions/ store), What's Changed (semantic diff via .context_state.yaml), Stakeholders/Contacts (from docs/stakeholders.md, docs/contacts.md). The 'What's Changed' section uses .context_state.yaml to track section hashes between syncs. Include tests.",
-      "acceptance_criteria": [
-        "internal/core/aicontext.go assembles CLAUDE.md from multiple data sources",
-        "Tracks section hashes in .context_state.yaml for semantic diffs",
-        "What's Changed section shows tasks added/completed and new knowledge",
-        "Handles missing files gracefully",
-        "go test ./internal/core/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-013"
-      ]
-    },
-    {
-      "id": "TASK-019",
-      "title": "Knowledge extractor and conflict detector",
-      "description": "Create internal/core/knowledge.go implementing KnowledgeExtractor: extracts learnings, decisions, gotchas from completed tasks into knowledge/decisions.yaml (within each task's ticket directory). Create internal/core/conflict.go implementing ConflictDetector: checks proposed changes against existing ADRs and decisions to detect conflicts. These are used by the hook engine (Phase B of TaskCompleted) and the sync commands. Include tests.",
-      "acceptance_criteria": [
-        "internal/core/knowledge.go extracts decisions to knowledge/decisions.yaml",
-        "internal/core/conflict.go checks changes against ADRs",
-        "Both integrate with hook engine's Phase B",
-        "go test ./internal/core/... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-013"
-      ]
-    },
-    {
-      "id": "TASK-020",
-      "title": "Session capture and MCP/repo sync integration",
-      "description": "Create CLI commands: 'adb session save|ingest|capture|list|show' for managing captured sessions. Create internal/integration/reposync.go implementing RepoSyncManager: parallel fetch/prune/ff-merge/branch-cleanup for all repos under repos/. Create internal/integration/taskfilerunner.go: discovers and runs Taskfile.yaml tasks via CLIExecutor. Create internal/integration/screenshot.go: OS-specific screenshot capture (screencapture on macOS, import on Linux, snippingtool on Windows). Create internal/integration/filechannel.go: file-based inbox/outbox with YAML frontmatter. Include tests.",
-      "acceptance_criteria": [
-        "Session commands manage captured Claude Code sessions",
-        "RepoSyncManager does parallel repo sync operations",
-        "TaskfileRunner discovers and runs Taskfile.yaml tasks",
-        "Screenshot pipeline supports Linux, macOS, Windows",
-        "go test ./... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-016"
-      ]
-    },
-    {
-      "id": "TASK-021",
-      "title": "Project initializer and team/agents commands",
-      "description": "Create internal/core/projectinit.go implementing ProjectInitializer: full workspace scaffolding for new projects with embedded templates, git init, .taskconfig creation, .claude/ setup. Create CLI commands: 'adb team <team-name> <prompt>' for multi-agent orchestration, 'adb agents' to list available agents, 'adb mcp check [--no-cache]' for MCP health checks. Create embedded templates for BMAD artifacts (PRD, product-brief, tech-spec, architecture-doc) and quality gate checklists. Include tests.",
-      "acceptance_criteria": [
-        "ProjectInitializer scaffolds complete workspace from templates",
-        "Team command launches multi-agent orchestration",
-        "Agents command lists available specialized agents",
-        "MCP check validates server health",
-        "go test ./... passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-016"
-      ]
-    },
-    {
-      "id": "TASK-022",
-      "title": "Property-based tests and edge case hardening",
-      "description": "Add property-based tests using pgregory.net/rapid across all packages. Categories: string/format transformations (branch name sanitization, task ID formatting), state transitions (task lifecycle), data structure operations (backlog CRUD), conflict detection, text processing. Add edge case tests: empty backlog, missing config, corrupted YAML recovery, permission errors, concurrent operations, invalid task IDs. Follow naming convention: TestProperty_* for property tests. Use t.TempDir() for all filesystem tests. Target: at least 15 property test functions across core, storage, hooks, and integration packages.",
-      "acceptance_criteria": [
-        "At least 15 property-based test functions using rapid",
-        "Edge case tests cover: empty backlog, missing config, corrupted YAML, concurrent ops",
-        "All property tests follow TestProperty_* naming",
-        "go test ./... -run TestProperty passes",
-        "go test ./... -count=1 passes"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-017",
-        "TASK-018",
-        "TASK-019"
-      ]
-    },
-    {
-      "id": "TASK-023",
-      "title": "Build system, linter config, and CI pipeline",
-      "description": "Create Makefile with targets: build (go build with ldflags for VERSION/COMMIT/DATE), test (go test with race detection), lint (golangci-lint), vet (go vet), fmt (gofmt -s -w), security (govulncheck), docker-build (multi-stage), install-local (to ~/.local/bin/adb). Create .golangci.yml with enabled linters: errcheck, gosimple, govet, ineffassign, staticcheck, unused, gosec, bodyclose, exhaustive, nilerr, unparam. Test file exclusions for gosec, unparam, errcheck. Create .goreleaser.yml for Linux/macOS/Windows (amd64+arm64) with checksums. Create Dockerfile: two-stage Alpine build (golang:1.22-alpine builder with CGO_ENABLED=0, alpine:3.21 runtime with git + ca-certificates). Create .github/workflows/ci.yml running tests, lint, vet on push. Include a .gitignore for Go projects.",
-      "acceptance_criteria": [
-        "Makefile has build, test, lint, vet, fmt, security, docker-build, install-local targets",
-        ".golangci.yml enables errcheck, gosimple, govet, staticcheck, unused, gosec, etc.",
-        ".goreleaser.yml builds for 6 platform/arch combinations",
-        "Dockerfile uses multi-stage Alpine build",
-        ".github/workflows/ci.yml runs tests and lint on push",
-        "make build succeeds"
-      ],
-      "status": "done",
-      "dependencies": [
-        "TASK-020",
-        "TASK-021",
-        "TASK-022"
-      ]
+      "status": "pending",
+      "dependencies": ["HIVE-003", "HIVE-005", "HIVE-007", "HIVE-009"]
     }
   ]
 }

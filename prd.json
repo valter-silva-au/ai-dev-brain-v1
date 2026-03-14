@@ -90,7 +90,7 @@
         "go build ./internal/hive/... passes",
         "go vet ./internal/hive/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "HIVE-001"
       ]

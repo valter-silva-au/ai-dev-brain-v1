@@ -12,7 +12,7 @@
         "go vet ./pkg/models/... passes",
         "go build ./pkg/models/... passes"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": []
     },
     {

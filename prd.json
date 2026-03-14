@@ -105,7 +105,7 @@
         "All tests pass: go test ./internal/hive/... -count=1 -race",
         "Tests use t.TempDir() for isolation"
       ],
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         "HIVE-006"
       ]

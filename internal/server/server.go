@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -53,18 +55,45 @@ func (s *Server) Start(addr string) error {
 	// Chat endpoint
 	mux.HandleFunc("POST /chat", s.handleChat)
 
-	// Static image serving
-	mux.Handle("GET /images/", http.StripPrefix("/images/", http.FileServer(http.Dir(s.app.BasePath+"/images"))))
-
 	s.httpServer = &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
-	// Start background state broadcaster
+	// Create images directory
+	imageDir := filepath.Join(s.app.BasePath, "images", "generated")
+	os.MkdirAll(imageDir, 0o755)
+
+	// Serve generated images
+	mux.Handle("GET /images/", http.StripPrefix("/images/", http.FileServer(http.Dir(filepath.Join(s.app.BasePath, "images")))))
+
+	// Start background loops
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go s.broadcastLoop(ctx)
+
+	// Start thinking loop (text summary every 5s)
+	thinking := NewThinkingLoop(s.hub, s.gatherAgents, s.gatherTasks, s.gatherMetrics)
+	go thinking.Run(ctx)
+
+	// Start image generation loop (continuous, ~70s per image)
+	imageGen := NewImageGenerator(s.hub, imageDir, s.templates, func() string {
+		agents := s.gatherAgents()
+		tasks := s.gatherTasks()
+		var parts []string
+		for _, a := range agents {
+			if a.Status == "working" {
+				parts = append(parts, fmt.Sprintf("%s working on %s", a.DisplayName, a.CurrentTask))
+			}
+		}
+		for _, t := range tasks {
+			if t.Status == "in_progress" {
+				parts = append(parts, fmt.Sprintf("task %s %s", t.ID, t.Title))
+			}
+		}
+		return strings.Join(parts, ", ")
+	})
+	go imageGen.Run(ctx)
 
 	log.Printf("ADB Dashboard serving at http://%s", addr)
 	return s.httpServer.ListenAndServe()

@@ -239,17 +239,35 @@ const shellHTML = `<!DOCTYPE html>
   <!-- Main Grid -->
   <div class="grid grid-cols-12 gap-4 px-6 pb-6" style="height: calc(100vh - 160px);">
 
-    <!-- Kanban Board -->
-    <div id="kanban" class="col-span-6 bg-slate-900/50 rounded-xl border border-slate-800 p-4 overflow-auto">
+    <!-- Left: ADB Mind Image + Thinking -->
+    <div class="col-span-3 flex flex-col gap-4">
+      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4">
+        <h2 class="text-sm font-semibold text-brand-400 mb-3">🧠 ADB MIND</h2>
+        <div id="mindimage">
+          <div class="w-full h-48 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+            <span class="text-slate-500 text-sm animate-pulse">Generating first vision...</span>
+          </div>
+        </div>
+      </div>
+      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 flex-1 overflow-auto">
+        <h2 class="text-sm font-semibold text-brand-400 mb-3">💭 THINKING</h2>
+        <div id="thinking">
+          <p class="text-slate-500 text-sm animate-pulse">Observing the ecosystem...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Kanban Board -->
+    <div id="kanban" class="col-span-4 bg-slate-900/50 rounded-xl border border-slate-800 p-4 overflow-auto">
       <h2 class="text-sm font-semibold text-slate-300 mb-3">TASK BOARD</h2>
       <p class="text-slate-500 text-sm">Loading tasks...</p>
     </div>
 
-    <!-- Metrics + Alerts -->
-    <div class="col-span-3 flex flex-col gap-4">
+    <!-- Right top: Metrics + Alerts -->
+    <div class="col-span-2 flex flex-col gap-4">
       <div id="metrics" class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 flex-1">
         <h2 class="text-sm font-semibold text-slate-300 mb-3">METRICS</h2>
-        <p class="text-slate-500 text-sm">Loading metrics...</p>
+        <p class="text-slate-500 text-sm">Loading...</p>
       </div>
       <div id="alerts" class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 flex-1">
         <h2 class="text-sm font-semibold text-slate-300 mb-3">ALERTS</h2>
@@ -257,7 +275,7 @@ const shellHTML = `<!DOCTYPE html>
       </div>
     </div>
 
-    <!-- Chat -->
+    <!-- Right: Chat -->
     <div class="col-span-3 bg-slate-900/50 rounded-xl border border-slate-800 p-4 flex flex-col">
       <h2 class="text-sm font-semibold text-slate-300 mb-3">ORCHESTRATOR CHAT</h2>
       <div id="chat" class="flex-1 overflow-auto text-sm space-y-2">
@@ -270,10 +288,6 @@ const shellHTML = `<!DOCTYPE html>
       </form>
     </div>
 
-  </div>
-
-  <!-- Gallery strip -->
-  <div id="gallery" class="px-6 pb-4">
   </div>
 
 </body>

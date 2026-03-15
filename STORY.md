@@ -517,6 +517,8 @@ The cost of connecting eight AI agents and thirty repositories into a unified in
 
 ## Chapter 10: The Great Migration — One Brain to Rule Them All
 
+![Scattered brain fragments converging into one unified luminous brain](docs/images/11-great-migration.png)
+
 There's a moment in every project's life where the scaffolding has to come down and the real structure has to stand on its own.
 
 For AI Dev Brain, that moment came on March 15, 2026.
@@ -568,6 +570,8 @@ graph TD
 ```
 
 ### The Six-Agent Stress Test
+
+![Six specialized robot agents stress-testing a digital fortress](docs/images/12-six-agent-stress-test.png)
 
 We didn't just set it up and hope for the best. We deployed **six specialized agents in parallel** to tear-test the entire setup:
 

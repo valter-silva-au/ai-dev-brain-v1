@@ -366,6 +366,7 @@ hooks:
 - `adb metrics [--json] [--since 7d]` -- Display task and agent metrics from the event log
 - `adb alerts [--notify]` -- Show active alerts (blocked tasks, stale tasks, long reviews, backlog size)
 - `adb dashboard` -- Interactive TUI dashboard for task metrics and alerts
+- `adb serve [--port 8400] [--tv]` -- Start MyImaginationAI web dashboard (HTMX + WebSocket live updates)
 
 ### Sessions
 

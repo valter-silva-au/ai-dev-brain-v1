@@ -140,7 +140,7 @@ func NewMockWorktreeCreator() *MockWorktreeCreator {
 	}
 }
 
-func (m *MockWorktreeCreator) CreateWorktree(taskID, branchName, worktreePath string) error {
+func (m *MockWorktreeCreator) CreateWorktree(taskID, branchName, worktreePath, repoPath string) error {
 	if m.shouldFail || m.createErr != nil {
 		if m.createErr != nil {
 			return m.createErr

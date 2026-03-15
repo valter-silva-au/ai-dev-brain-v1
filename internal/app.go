@@ -103,14 +103,13 @@ type worktreeCreatorAdapter struct {
 	basePath string
 }
 
-func (a *worktreeCreatorAdapter) CreateWorktree(taskID, branchName, worktreePath string) error {
-	// For local repo, use current directory
-	// This assumes we're working with the current git repository
-	repoPath := "."
+func (a *worktreeCreatorAdapter) CreateWorktree(taskID, branchName, worktreePath, repoPath string) error {
+	if repoPath == "" {
+		// No repo specified — use the ADB workspace itself as the repo
+		repoPath = a.basePath
+	}
 	baseBranch := "main"
 
-	// The GitWorktreeManager already handles creating the worktree at the right path
-	// We just need to call it with the taskID
 	_, err := a.manager.CreateWorktree(taskID, repoPath, baseBranch)
 	return err
 }

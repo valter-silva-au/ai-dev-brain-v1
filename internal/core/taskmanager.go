@@ -30,7 +30,7 @@ type ContextStore interface {
 
 // WorktreeCreator defines the interface for creating git worktrees
 type WorktreeCreator interface {
-	CreateWorktree(taskID, branchName, worktreePath string) error
+	CreateWorktree(taskID, branchName, worktreePath, repoPath string) error
 }
 
 // WorktreeRemover defines the interface for removing git worktrees
@@ -170,7 +170,7 @@ func (tm *TaskManager) Create(opts CreateTaskOpts) (*models.Task, error) {
 	branchName := fmt.Sprintf("task/%s", taskID)
 	worktreePath := filepath.Join(tm.worktreesDir, taskID)
 	if tm.worktreeCreator != nil {
-		if err := tm.worktreeCreator.CreateWorktree(taskID, branchName, worktreePath); err != nil {
+		if err := tm.worktreeCreator.CreateWorktree(taskID, branchName, worktreePath, opts.Repo); err != nil {
 			// Rollback: remove task dir and backlog entry
 			_ = os.RemoveAll(result.TaskDir)
 			_ = tm.backlogStore.RemoveTask(taskID)

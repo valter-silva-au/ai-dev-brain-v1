@@ -145,7 +145,7 @@ func (tm *TaskManager) Create(opts CreateTaskOpts) (*models.Task, error) {
 		return nil, fmt.Errorf("failed to add task to backlog: %w", err)
 	}
 
-	// Bootstrap directories and files
+	// Bootstrap directories and files (without task-context.md — worktree doesn't exist yet)
 	bootstrapConfig := BootstrapConfig{
 		TaskID:             taskID,
 		Title:              opts.Title,
@@ -153,7 +153,7 @@ func (tm *TaskManager) Create(opts CreateTaskOpts) (*models.Task, error) {
 		AcceptanceCriteria: opts.AcceptanceCriteria,
 		Status:             string(task.Status),
 		TicketsDir:         tm.ticketsDir,
-		WorktreeDir:        ".", // Will be set to actual worktree after creation
+		WorktreeDir:        "", // Empty — task-context.md generated after worktree creation
 	}
 
 	result, err := BootstrapSystem(bootstrapConfig, tm.templateManager)
@@ -178,6 +178,12 @@ func (tm *TaskManager) Create(opts CreateTaskOpts) (*models.Task, error) {
 		}
 		task.WorktreePath = worktreePath
 		task.Branch = branchName
+
+		// Generate task-context.md inside the worktree now that it exists
+		if err := generateTaskContext(worktreePath, tm.templateManager, bootstrapConfig); err != nil {
+			// Non-fatal: log but continue — worktree is usable without task-context
+			fmt.Fprintf(os.Stderr, "Warning: failed to generate task-context.md in worktree: %v\n", err)
+		}
 	}
 
 	// Update backlog with worktree info

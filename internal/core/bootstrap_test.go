@@ -529,3 +529,89 @@ func TestBootstrapSystemDirectoryStructure(t *testing.T) {
 		t.Errorf("Unexpected KnowledgeDir: %s", result.KnowledgeDir)
 	}
 }
+
+func TestBootstrapSystem_EmptyWorktreeDir(t *testing.T) {
+	tempDir := t.TempDir()
+	tm, err := NewEmbedTemplateManager(claude.FS)
+	if err != nil {
+		t.Fatalf("Failed to create template manager: %v", err)
+	}
+
+	// Bootstrap with empty WorktreeDir — should skip task-context.md
+	config := BootstrapConfig{
+		TaskID:      "TASK-SKIP",
+		Title:       "Skip Context Test",
+		Description: "Test that empty WorktreeDir skips task-context.md",
+		TicketsDir:  filepath.Join(tempDir, "tickets"),
+		WorktreeDir: "", // Empty — no task-context.md
+	}
+
+	result, err := BootstrapSystem(config, tm)
+	if err != nil {
+		t.Fatalf("BootstrapSystem() error = %v", err)
+	}
+
+	// TaskContextFile should be empty
+	if result.TaskContextFile != "" {
+		t.Errorf("TaskContextFile should be empty when WorktreeDir is empty, got %q", result.TaskContextFile)
+	}
+
+	// But ticket files should still exist
+	if _, err := os.Stat(result.StatusFile); os.IsNotExist(err) {
+		t.Error("status.yaml should exist")
+	}
+	if _, err := os.Stat(result.ContextFile); os.IsNotExist(err) {
+		t.Error("context.md should exist")
+	}
+}
+
+func TestGenerateTaskContext(t *testing.T) {
+	tempDir := t.TempDir()
+	tm, err := NewEmbedTemplateManager(claude.FS)
+	if err != nil {
+		t.Fatalf("Failed to create template manager: %v", err)
+	}
+
+	config := BootstrapConfig{
+		TaskID:      "TASK-00099",
+		Title:       "Context Gen Test",
+		Description: "Testing generateTaskContext",
+		Status:      "in_progress",
+	}
+
+	// Generate task-context.md in temp dir (simulating a worktree)
+	err = generateTaskContext(tempDir, tm, config)
+	if err != nil {
+		t.Fatalf("generateTaskContext() error = %v", err)
+	}
+
+	// Verify file exists
+	taskContextPath := filepath.Join(tempDir, ".claude", "rules", "task-context.md")
+	content, err := os.ReadFile(taskContextPath)
+	if err != nil {
+		t.Fatalf("Failed to read task-context.md: %v", err)
+	}
+
+	// Verify content contains task ID
+	if !strings.Contains(string(content), "TASK-00099") {
+		t.Error("task-context.md should contain task ID")
+	}
+}
+
+func TestGenerateTaskContext_InvalidPath(t *testing.T) {
+	tm, err := NewEmbedTemplateManager(claude.FS)
+	if err != nil {
+		t.Fatalf("Failed to create template manager: %v", err)
+	}
+
+	config := BootstrapConfig{
+		TaskID: "TASK-BAD",
+		Title:  "Bad Path Test",
+	}
+
+	// Generate at non-writable path should fail
+	err = generateTaskContext("/nonexistent/path/that/doesnt/exist", tm, config)
+	if err == nil {
+		t.Error("generateTaskContext() with invalid path should fail")
+	}
+}

@@ -68,9 +68,7 @@ func BootstrapSystem(config BootstrapConfig, tm TemplateManager) (*BootstrapResu
 	if config.TicketsDir == "" {
 		config.TicketsDir = "tickets"
 	}
-	if config.WorktreeDir == "" {
-		config.WorktreeDir = "."
-	}
+	// WorktreeDir intentionally not defaulted — empty means skip task-context.md
 	if config.Status == "" {
 		config.Status = "pending"
 	}
@@ -159,19 +157,39 @@ func BootstrapSystem(config BootstrapConfig, tm TemplateManager) (*BootstrapResu
 	}
 	result.DecisionsFile = decisionsFile
 
-	// Create .claude/rules/task-context.md in worktree
-	claudeRulesDir := filepath.Join(config.WorktreeDir, ".claude", "rules")
+	// Create .claude/rules/task-context.md in worktree (only if WorktreeDir is set)
+	if config.WorktreeDir != "" {
+		claudeRulesDir := filepath.Join(config.WorktreeDir, ".claude", "rules")
+		if err := os.MkdirAll(claudeRulesDir, 0o755); err != nil {
+			return nil, fmt.Errorf("failed to create .claude/rules directory: %w", err)
+		}
+
+		taskContextFile := filepath.Join(claudeRulesDir, "task-context.md")
+		if err := renderTemplateToFile(tm, TemplateTypeTaskContext, templateData, taskContextFile); err != nil {
+			return nil, fmt.Errorf("failed to create task-context.md: %w", err)
+		}
+		result.TaskContextFile = taskContextFile
+	}
+
+	return result, nil
+}
+
+// generateTaskContext creates .claude/rules/task-context.md inside a worktree
+func generateTaskContext(worktreePath string, tm TemplateManager, config BootstrapConfig) error {
+	claudeRulesDir := filepath.Join(worktreePath, ".claude", "rules")
 	if err := os.MkdirAll(claudeRulesDir, 0o755); err != nil {
-		return nil, fmt.Errorf("failed to create .claude/rules directory: %w", err)
+		return fmt.Errorf("failed to create .claude/rules directory: %w", err)
+	}
+
+	templateData := map[string]interface{}{
+		"TaskID":      config.TaskID,
+		"Title":       config.Title,
+		"Description": config.Description,
+		"Status":      config.Status,
 	}
 
 	taskContextFile := filepath.Join(claudeRulesDir, "task-context.md")
-	if err := renderTemplateToFile(tm, TemplateTypeTaskContext, templateData, taskContextFile); err != nil {
-		return nil, fmt.Errorf("failed to create task-context.md: %w", err)
-	}
-	result.TaskContextFile = taskContextFile
-
-	return result, nil
+	return renderTemplateToFile(tm, TemplateTypeTaskContext, templateData, taskContextFile)
 }
 
 // renderTemplateToFile renders a template and writes it to a file

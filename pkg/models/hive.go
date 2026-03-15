@@ -91,12 +91,12 @@ type HiveKnowledgeResult struct {
 
 // HiveContext represents the aggregated context from the Hive Mind system.
 type HiveContext struct {
-	CurrentProject     Project               `yaml:"current_project"`
-	RelatedProjects    []Project             `yaml:"related_projects,omitempty"`
-	RelatedKnowledge   []HiveKnowledgeResult `yaml:"related_knowledge,omitempty"`
-	ActiveAgents       []Agent               `yaml:"active_agents,omitempty"`
-	CrossRepoPatterns  []string              `yaml:"cross_repo_patterns,omitempty"`
-	Summary            string                `yaml:"summary"`
+	CurrentProject    Project               `yaml:"current_project"`
+	RelatedProjects   []Project             `yaml:"related_projects,omitempty"`
+	RelatedKnowledge  []HiveKnowledgeResult `yaml:"related_knowledge,omitempty"`
+	ActiveAgents      []Agent               `yaml:"active_agents,omitempty"`
+	CrossRepoPatterns []string              `yaml:"cross_repo_patterns,omitempty"`
+	Summary           string                `yaml:"summary"`
 }
 
 // HiveMessageType represents the type of message in the Hive Mind messaging system.

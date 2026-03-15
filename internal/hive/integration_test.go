@@ -533,8 +533,8 @@ func setupProjectWithKnowledge(t *testing.T, projectPath string, entries []knowl
 	}
 
 	type knowledgeIndexFile struct {
-		Version string                    `yaml:"version"`
-		Entries []knowledgeIndexEntry     `yaml:"entries"`
+		Version string                `yaml:"version"`
+		Entries []knowledgeIndexEntry `yaml:"entries"`
 	}
 
 	var indexEntries []knowledgeIndexEntry

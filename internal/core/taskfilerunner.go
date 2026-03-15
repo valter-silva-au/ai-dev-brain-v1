@@ -5,10 +5,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+// dangerousVarPattern detects shell injection via variable expansion.
+// Variable values should not contain shell metacharacters that could
+// alter command semantics when substituted into command strings.
+var dangerousVarPattern = regexp.MustCompile(`[;` + "`" + `$\(\)]`)
 
 // TaskfileRunner executes tasks defined in Taskfile.yml
 type TaskfileRunner interface {
@@ -86,7 +92,18 @@ func (tr *DefaultTaskfileRunner) Run(taskName string) error {
 		workDir = filepath.Join(tr.workDir, task.Dir)
 	}
 
+	// Validate environment variable values before execution
+	for k, v := range task.Env {
+		if dangerousVarPattern.MatchString(v) {
+			return fmt.Errorf("task env variable %q contains dangerous shell metacharacters", k)
+		}
+	}
+
 	for _, cmdStr := range task.Cmds {
+		if strings.TrimSpace(cmdStr) == "" {
+			continue
+		}
+
 		fmt.Printf("Running: %s\n", cmdStr)
 
 		cmd := exec.Command("sh", "-c", cmdStr)

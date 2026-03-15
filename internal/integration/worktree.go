@@ -5,8 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+// validTaskID matches safe task IDs: alphanumeric with dashes and underscores
+var validTaskID = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 // GitWorktreeManager manages git worktrees for multi-repo task isolation
 type GitWorktreeManager interface {
@@ -106,6 +110,13 @@ func (m *DefaultGitWorktreeManager) CreateWorktree(taskID, repoPath, baseBranch 
 	}
 	if repoPath == "" {
 		return "", fmt.Errorf("repoPath cannot be empty")
+	}
+	// Validate taskID to prevent path traversal
+	if !validTaskID.MatchString(taskID) {
+		return "", fmt.Errorf("taskID contains invalid characters (must be alphanumeric with dashes/underscores): %s", taskID)
+	}
+	if strings.Contains(taskID, "..") {
+		return "", fmt.Errorf("taskID contains path traversal sequence: %s", taskID)
 	}
 	if baseBranch == "" {
 		baseBranch = "main"

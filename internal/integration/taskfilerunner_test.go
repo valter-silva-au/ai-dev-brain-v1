@@ -366,3 +366,48 @@ func (e *testCLIExecutor) Execute(command string, workDir string) (string, strin
 func (e *testCLIExecutor) ExecuteWithWriter(command string, workDir string, writer io.Writer) (string, string, error) {
 	return e.executeFunc(command, workDir)
 }
+
+func TestTaskfileRunner_ExpandVars_RejectsDangerousValues(t *testing.T) {
+	tr := &DefaultTaskfileRunner{}
+
+	tests := []struct {
+		name     string
+		vars     map[string]string
+		template string
+		want     string // should contain unexpanded placeholder
+	}{
+		{
+			name:     "semicolon in var value",
+			vars:     map[string]string{"NAME": "hello; rm -rf /"},
+			template: "echo {{.NAME}}",
+			want:     "{{.NAME}}", // not expanded
+		},
+		{
+			name:     "backtick in var value",
+			vars:     map[string]string{"CMD": "`whoami`"},
+			template: "echo $CMD",
+			want:     "$CMD", // not expanded
+		},
+		{
+			name:     "subshell in var value",
+			vars:     map[string]string{"X": "$(cat /etc/passwd)"},
+			template: "echo {{.X}}",
+			want:     "{{.X}}", // not expanded
+		},
+		{
+			name:     "safe value is expanded",
+			vars:     map[string]string{"NAME": "safe-value"},
+			template: "echo {{.NAME}}",
+			want:     "echo safe-value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tr.expandVars(tt.template, tt.vars, nil)
+			if !strings.Contains(result, tt.want) {
+				t.Errorf("expandVars() = %q, want to contain %q", result, tt.want)
+			}
+		})
+	}
+}

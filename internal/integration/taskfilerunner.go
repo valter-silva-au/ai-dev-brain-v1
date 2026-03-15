@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -188,8 +189,12 @@ func (tr *DefaultTaskfileRunner) RunTask(taskfilePath string, taskName string, e
 	return nil
 }
 
+// dangerousVarValue detects shell injection in variable values
+var dangerousVarValue = regexp.MustCompile(`[;` + "`" + `$\(\)]`)
+
 // expandVars expands variables in a command string
 // Variables are referenced as {{.VAR_NAME}} or $VAR_NAME
+// Variable values are validated to prevent shell injection.
 func (tr *DefaultTaskfileRunner) expandVars(cmd string, globalVars, taskVars map[string]string) string {
 	result := cmd
 
@@ -202,14 +207,22 @@ func (tr *DefaultTaskfileRunner) expandVars(cmd string, globalVars, taskVars map
 		allVars[k] = v
 	}
 
-	// Replace {{.VAR}} style variables
+	// Replace {{.VAR}} style variables (with validation)
 	for key, value := range allVars {
+		if dangerousVarValue.MatchString(value) {
+			// Skip injection — replace with sanitized placeholder
+			fmt.Fprintf(os.Stderr, "Warning: skipping variable %q — value contains shell metacharacters\n", key)
+			continue
+		}
 		placeholder := fmt.Sprintf("{{.%s}}", key)
 		result = strings.ReplaceAll(result, placeholder, value)
 	}
 
-	// Replace $VAR style variables
+	// Replace $VAR style variables (with validation)
 	for key, value := range allVars {
+		if dangerousVarValue.MatchString(value) {
+			continue
+		}
 		placeholder := fmt.Sprintf("$%s", key)
 		result = strings.ReplaceAll(result, placeholder, value)
 	}

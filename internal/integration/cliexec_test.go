@@ -116,16 +116,54 @@ func TestExecuteWithEnvInjection(t *testing.T) {
 	}
 	executor := NewCLIExecutor(nil, taskEnv, "")
 
-	// Execute command that prints environment variables
-	stdout, _, err := executor.Execute("sh -c 'echo $ADB_TASK_ID $ADB_BRANCH $ADB_WORKTREE_PATH $ADB_TICKET_PATH'", "")
+	// Use 'env' command (no shell metacharacters) to verify env vars are injected
+	stdout, _, err := executor.Execute("env", "")
 	if err != nil {
 		t.Fatalf("Execute() with env injection failed: %v", err)
 	}
 
-	expected := []string{"TASK-123", "task/123", "/work/task-123", "/tickets/TASK-123"}
+	expected := []string{"ADB_TASK_ID=TASK-123", "ADB_BRANCH=task/123", "ADB_WORKTREE_PATH=/work/task-123", "ADB_TICKET_PATH=/tickets/TASK-123"}
 	for _, exp := range expected {
 		if !strings.Contains(stdout, exp) {
 			t.Errorf("Expected stdout to contain '%s', got: %s", exp, stdout)
+		}
+	}
+}
+
+func TestExecuteRejectsInjection(t *testing.T) {
+	executor := NewCLIExecutor(nil, TaskEnv{}, "")
+
+	tests := []struct {
+		name    string
+		command string
+	}{
+		{"semicolon injection", "echo hello; rm -rf /"},
+		{"backtick injection", "echo `whoami`"},
+		{"subshell injection", "echo $(whoami)"},
+		{"dollar injection in shell mode", "sh -c 'echo $HOME'"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := executor.Execute(tt.command, "")
+			if err == nil {
+				t.Errorf("Execute(%q) should have been rejected", tt.command)
+			}
+		})
+	}
+}
+
+func TestValidateCommandArgs(t *testing.T) {
+	// Safe args
+	if err := ValidateCommandArgs([]string{"hello", "world", "--flag", "-v", "path/to/file"}); err != nil {
+		t.Errorf("ValidateCommandArgs() rejected safe args: %v", err)
+	}
+
+	// Dangerous args
+	dangerous := []string{"hello;world", "$(whoami)", "`id`", "foo()", "a;b"}
+	for _, arg := range dangerous {
+		if err := ValidateCommandArgs([]string{arg}); err == nil {
+			t.Errorf("ValidateCommandArgs(%q) should have been rejected", arg)
 		}
 	}
 }

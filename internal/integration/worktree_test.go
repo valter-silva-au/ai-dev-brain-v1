@@ -216,6 +216,30 @@ func TestCreateWorktreeEmptyParams(t *testing.T) {
 			wantErr:     true,
 			errContains: "repoPath cannot be empty",
 		},
+		{
+			name:        "Path traversal in taskID",
+			taskID:      "../../tmp/evil",
+			repoPath:    "/some/repo",
+			baseBranch:  "main",
+			wantErr:     true,
+			errContains: "invalid characters",
+		},
+		{
+			name:        "Semicolon in taskID",
+			taskID:      "TASK;rm -rf",
+			repoPath:    "/some/repo",
+			baseBranch:  "main",
+			wantErr:     true,
+			errContains: "invalid characters",
+		},
+		{
+			name:        "Space in taskID",
+			taskID:      "TASK 001",
+			repoPath:    "/some/repo",
+			baseBranch:  "main",
+			wantErr:     true,
+			errContains: "invalid characters",
+		},
 	}
 
 	for _, tt := range tests {

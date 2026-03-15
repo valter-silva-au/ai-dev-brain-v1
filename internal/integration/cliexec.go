@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -54,6 +55,22 @@ func (e *DefaultCLIExecutor) Execute(command string, workDir string) (string, st
 	return e.ExecuteWithWriter(command, workDir, nil)
 }
 
+// dangerousPatterns detects command injection attempts in individual arguments.
+// These patterns indicate shell metacharacters that should not appear in
+// simple command arguments (they are fine in explicitly shell-delegated commands).
+var dangerousPatterns = regexp.MustCompile(`[;` + "`" + `$\(\)]`)
+
+// ValidateCommandArgs checks that individual command arguments don't contain
+// shell injection metacharacters. Returns an error if dangerous patterns are found.
+func ValidateCommandArgs(args []string) error {
+	for _, arg := range args {
+		if dangerousPatterns.MatchString(arg) {
+			return fmt.Errorf("argument contains potentially dangerous shell characters: %q", arg)
+		}
+	}
+	return nil
+}
+
 // ExecuteWithWriter runs a command and captures output to both stdout/stderr and a writer
 func (e *DefaultCLIExecutor) ExecuteWithWriter(command string, workDir string, writer io.Writer) (string, string, error) {
 	if command == "" {
@@ -81,12 +98,23 @@ func (e *DefaultCLIExecutor) ExecuteWithWriter(command string, workDir string, w
 
 	var cmd *exec.Cmd
 	if needsShell {
+		// When delegating to shell, validate that the command doesn't contain
+		// injection attempts via semicolons, backticks, or subshell operators
+		// that weren't part of the original alias/command structure.
+		// Note: pipes, quotes, and redirects are expected in shell commands.
+		if dangerousPatterns.MatchString(resolvedCmd) {
+			return "", "", fmt.Errorf("command contains potentially dangerous shell metacharacters (;, `, $(), etc.): rejected for safety")
+		}
 		cmd = exec.Command("sh", "-c", resolvedCmd)
 	} else {
 		// Split command into parts
 		parts := strings.Fields(resolvedCmd)
 		if len(parts) == 0 {
 			return "", "", fmt.Errorf("empty command after parsing")
+		}
+		// Validate arguments don't contain injection characters
+		if err := ValidateCommandArgs(parts[1:]); err != nil {
+			return "", "", fmt.Errorf("command argument validation failed: %w", err)
 		}
 		cmd = exec.Command(parts[0], parts[1:]...)
 	}

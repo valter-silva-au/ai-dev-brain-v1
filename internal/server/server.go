@@ -161,6 +161,17 @@ func (s *Server) broadcastState() {
 
 	// Render and broadcast each section independently
 	agents := s.gatherAgents()
+
+	// Separate OpenClaw bots from live processes for display
+	var openclawBots, liveProcesses []AgentView
+	for _, a := range agents {
+		if a.Type == "openclaw" {
+			openclawBots = append(openclawBots, a)
+		} else {
+			liveProcesses = append(liveProcesses, a)
+		}
+	}
+
 	if html, err := s.templates.RenderAgents(agents); err == nil {
 		s.hub.Broadcast(html)
 	}
@@ -193,59 +204,94 @@ func (s *Server) gatherDashboardData() DashboardData {
 	}
 }
 
-// gatherAgents reads agent state from the registry
+// gatherAgents combines registry agents with live process detection
 func (s *Server) gatherAgents() []AgentView {
-	if s.agentReg == nil {
-		return defaultAgents()
-	}
-
-	if err := s.agentReg.Load(); err != nil {
-		log.Printf("agent registry load: %v", err)
-		return defaultAgents()
-	}
-
-	agents, err := s.agentReg.List(models.AgentFilter{})
-	if err != nil {
-		log.Printf("agent registry list: %v", err)
-		return defaultAgents()
-	}
-
+	// Start with OpenClaw bots from registry
 	var views []AgentView
-	for _, a := range agents {
-		status := string(a.Status)
-		if status == "" {
-			status = "idle"
+
+	if s.agentReg != nil {
+		_ = s.agentReg.Load()
+		agents, _ := s.agentReg.List(models.AgentFilter{})
+		for _, a := range agents {
+			status := string(a.Status)
+			if status == "" {
+				status = "idle"
+			}
+			views = append(views, AgentView{
+				Name:         a.Name,
+				DisplayName:  a.Name,
+				Status:       status,
+				StatusEmoji:  agentStatusEmoji(status),
+				CurrentTask:  a.ActiveTask,
+				Capabilities: a.Capabilities,
+				Type:         string(a.Type),
+			})
 		}
-		views = append(views, AgentView{
-			Name:         a.Name,
-			DisplayName:  a.Name,
-			Status:       status,
-			StatusEmoji:  agentStatusEmoji(status),
-			CurrentTask:  a.ActiveTask,
-			Capabilities: a.Capabilities,
-			Type:         string(a.Type),
-		})
 	}
 
 	if len(views) == 0 {
-		return defaultAgents()
+		names := []string{"Prime", "Nexus", "A&R-X", "Job Hunter", "Luna", "Nina", "Vanguard", "PermitAI"}
+		for _, name := range names {
+			views = append(views, AgentView{
+				Name:        strings.ToLower(strings.ReplaceAll(name, " ", "-")),
+				DisplayName: name,
+				Status:      "idle",
+				StatusEmoji: "⚪",
+				Type:        "openclaw",
+			})
+		}
 	}
-	return views
-}
 
-// defaultAgents returns hardcoded agent list when registry is empty
-func defaultAgents() []AgentView {
-	names := []string{"Prime", "Nexus", "A&R-X", "Job Hunter", "Luna", "Nina", "Vanguard", "PermitAI"}
-	var agents []AgentView
-	for _, name := range names {
-		agents = append(agents, AgentView{
-			Name:        strings.ToLower(strings.ReplaceAll(name, " ", "-")),
-			DisplayName: name,
-			Status:      "idle",
-			StatusEmoji: "⚪",
+	// Scan live processes and overlay real-time status
+	procs := ScanLiveProcesses()
+	summary := SummarizeProcesses(procs)
+
+	// Add Claude Code sessions as active agents
+	for _, p := range summary.ClaudeCodeSessions {
+		views = append(views, AgentView{
+			Name:        fmt.Sprintf("claude-%d", p.PID),
+			DisplayName: fmt.Sprintf("Claude Code → %s", p.Project),
+			Status:      "working",
+			StatusEmoji: "🟢",
+			CurrentTask: p.Project,
+			Type:        "claude-code",
 		})
 	}
-	return agents
+
+	// Add Agent Loops runs
+	for _, p := range summary.AgentLoopsRuns {
+		views = append(views, AgentView{
+			Name:        fmt.Sprintf("agent-loops-%d", p.PID),
+			DisplayName: fmt.Sprintf("Agent Loops → %s", p.Project),
+			Status:      "working",
+			StatusEmoji: "🔵",
+			CurrentTask: p.Project,
+			Type:        "agent-loops",
+		})
+	}
+
+	// Mark OpenClaw gateway status
+	if summary.OpenClawGateway != nil {
+		for i, v := range views {
+			if v.Type == "openclaw" && v.DisplayName == "Prime" {
+				views[i].CurrentTask = "Gateway running"
+			}
+		}
+	}
+
+	// Add ADB MCP server
+	for _, p := range summary.ADBServices {
+		views = append(views, AgentView{
+			Name:        fmt.Sprintf("adb-%d", p.PID),
+			DisplayName: "ADB MCP Server",
+			Status:      "working",
+			StatusEmoji: "🧠",
+			CurrentTask: p.Project,
+			Type:        "adb-mcp",
+		})
+	}
+
+	return views
 }
 
 // gatherTasks reads task state from the backlog

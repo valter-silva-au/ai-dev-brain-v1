@@ -279,16 +279,29 @@ const shellHTML = `<!DOCTYPE html>
 </body>
 </html>`
 
-const agentsHTML = `<div id="agents" hx-swap-oob="innerHTML" class="px-6 py-4 flex flex-wrap gap-2">
-{{range .}}
-  <div class="agent-card inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-brand-500">
-    <span class="text-lg">{{.StatusEmoji}}</span>
-    <div>
-      <span class="text-sm font-medium text-white">{{.DisplayName}}</span>
-      <span class="text-xs text-slate-400 ml-2">{{.CurrentTask}}</span>
+const agentsHTML = `<div id="agents" hx-swap-oob="innerHTML" class="px-6 py-4">
+  <div class="flex flex-wrap gap-2 mb-3">
+    {{range .}}{{if eq .Type "openclaw"}}
+    <div class="agent-card inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-brand-500">
+      <span class="text-lg">{{.StatusEmoji}}</span>
+      <div>
+        <span class="text-sm font-medium text-white">{{.DisplayName}}</span>
+        {{if .CurrentTask}}<span class="text-xs text-slate-400 ml-2">{{.CurrentTask}}</span>{{end}}
+      </div>
     </div>
+    {{end}}{{end}}
   </div>
-{{end}}
+  <div class="flex flex-wrap gap-2">
+    {{range .}}{{if ne .Type "openclaw"}}
+    <div class="agent-card inline-flex items-center gap-2 px-4 py-2 rounded-xl {{if eq .Status "working"}}bg-green-900/30 border border-green-700 animate-pulse{{else}}bg-blue-900/30 border border-blue-700{{end}}">
+      <span class="text-lg">{{.StatusEmoji}}</span>
+      <div>
+        <span class="text-sm font-medium text-white">{{.DisplayName}}</span>
+        {{if .CurrentTask}}<span class="text-xs text-emerald-400 ml-2">{{.CurrentTask}}</span>{{end}}
+      </div>
+    </div>
+    {{end}}{{end}}
+  </div>
 </div>`
 
 const kanbanHTML = `<div id="kanban" hx-swap-oob="innerHTML" class="col-span-6 bg-slate-900/50 rounded-xl border border-slate-800 p-4 overflow-auto">

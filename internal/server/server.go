@@ -147,18 +147,37 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		s.hub.Broadcast(html)
 	}
 
-	// ADB orchestrator responds based on the message
-	response := s.processChat(message)
-	ack := ChatEntry{
+	// Show "thinking" indicator immediately
+	thinking := ChatEntry{
 		Time:    time.Now().UTC().Format("15:04"),
 		From:    "ADB",
 		To:      "Human",
-		Message: response,
+		Message: "<span class='text-slate-400 animate-pulse'>thinking...</span>",
 	}
-	html, err = render(s.templates.chat, ack)
-	if err == nil {
-		s.hub.Broadcast(html)
-	}
+	thinkHTML, _ := render(s.templates.chat, thinking)
+	s.hub.Broadcast(thinkHTML)
+
+	// Call LLM asynchronously so the HTTP response returns fast
+	go func() {
+		response, err := s.LLMChat(context.Background(), message)
+		if err != nil {
+			log.Printf("llm chat error: %v — falling back to keyword match", err)
+			response = s.processChat(message)
+		}
+
+		// Remove the "thinking" message and replace with real response
+		// (HTMX beforeend means we just append the real response)
+		ack := ChatEntry{
+			Time:    time.Now().UTC().Format("15:04"),
+			From:    "ADB",
+			To:      "Human",
+			Message: response,
+		}
+		ackHTML, err := render(s.templates.chat, ack)
+		if err == nil {
+			s.hub.Broadcast(ackHTML)
+		}
+	}()
 
 	w.WriteHeader(204)
 }

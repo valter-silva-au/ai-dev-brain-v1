@@ -125,8 +125,11 @@ type Templates struct {
 func NewTemplates() *Templates {
 	funcMap := template.FuncMap{
 		"upper": strings.ToUpper,
+		"safe": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 		"timeAgo": func(t string) string {
-			return t // simplified for now
+			return t
 		},
 	}
 
@@ -396,7 +399,7 @@ const chatHTML = `<div id="chat" hx-swap-oob="beforeend">
   <div class="px-2 py-1 rounded {{if eq .From "ADB"}}bg-brand-900/30{{else}}bg-slate-800{{end}}">
     <span class="text-xs text-slate-500">{{.Time}}</span>
     <span class="text-xs font-semibold {{if eq .From "ADB"}}text-brand-400{{else}}text-slate-300{{end}}">{{.From}} → {{.To}}</span>
-    <p class="text-sm text-slate-200">{{.Message}}</p>
+    <div class="text-sm text-slate-200">{{.Message | safe}}</div>
   </div>
 </div>`
 

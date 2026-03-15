@@ -32,6 +32,7 @@ that integrates with git worktrees, Claude Code, and terminal environments.`,
 	rootCmd.AddCommand(NewTeamCmd())
 	rootCmd.AddCommand(NewAgentsCmd())
 	rootCmd.AddCommand(NewMCPCmd())
+	rootCmd.AddCommand(NewServeCmd())
 
 	return rootCmd
 }

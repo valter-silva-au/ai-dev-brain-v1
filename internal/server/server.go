@@ -147,13 +147,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		s.hub.Broadcast(html)
 	}
 
-	// TODO: Phase 2 — orchestrator processes the message and responds
-	// For now, echo back an acknowledgement
+	// ADB orchestrator responds based on the message
+	response := s.processChat(message)
 	ack := ChatEntry{
 		Time:    time.Now().UTC().Format("15:04"),
 		From:    "ADB",
 		To:      "Human",
-		Message: fmt.Sprintf("Received: %q — orchestrator not yet active.", message),
+		Message: response,
 	}
 	html, err = render(s.templates.chat, ack)
 	if err == nil {
@@ -161,6 +161,153 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(204)
+}
+
+// processChat generates an intelligent response based on the message
+func (s *Server) processChat(message string) string {
+	lower := strings.ToLower(message)
+
+	// Status report
+	if strings.Contains(lower, "status") || strings.Contains(lower, "report") || strings.Contains(lower, "what") {
+		return s.generateStatusReport()
+	}
+
+	// Agent-specific queries
+	if strings.Contains(lower, "who") && (strings.Contains(lower, "working") || strings.Contains(lower, "active") || strings.Contains(lower, "running")) {
+		return s.generateActiveAgentsReport()
+	}
+
+	// Task queries
+	if strings.Contains(lower, "task") || strings.Contains(lower, "blocked") || strings.Contains(lower, "backlog") {
+		return s.generateTaskReport()
+	}
+
+	// Help
+	if strings.Contains(lower, "help") || lower == "?" {
+		return "I can answer: <b>status report</b>, <b>who is working</b>, <b>tasks</b>, <b>blocked</b>, <b>backlog</b>, <b>metrics</b>. Just ask!"
+	}
+
+	// Metrics
+	if strings.Contains(lower, "metric") {
+		m := s.gatherMetrics()
+		return fmt.Sprintf("📊 <b>Metrics:</b> %d tasks created, %d completed, %d active, %d blocked, %d agent sessions, %d knowledge items.",
+			m.TasksCreated, m.TasksCompleted, m.TasksActive, m.TasksBlocked, m.AgentSessions, m.KnowledgeItems)
+	}
+
+	// Default — friendly response
+	return fmt.Sprintf("Hey! I heard you say %q. Try asking for a <b>status report</b>, <b>who is working</b>, or about <b>tasks</b>. I'm here to help! 🧠", message)
+}
+
+// generateStatusReport creates a comprehensive status summary
+func (s *Server) generateStatusReport() string {
+	agents := s.gatherAgents()
+	tasks := s.gatherTasks()
+	metrics := s.gatherMetrics()
+	procs := ScanLiveProcesses()
+	summary := SummarizeProcesses(procs)
+
+	var lines []string
+	lines = append(lines, "📋 <b>Status Report</b>")
+	lines = append(lines, "")
+
+	// Live processes
+	total := len(summary.ClaudeCodeSessions) + len(summary.AgentLoopsRuns)
+	lines = append(lines, fmt.Sprintf("🔥 <b>%d active AI sessions</b>", total))
+	for _, p := range summary.ClaudeCodeSessions {
+		lines = append(lines, fmt.Sprintf("&nbsp;&nbsp;🟢 Claude Code → <b>%s</b>", p.Project))
+	}
+	for _, p := range summary.AgentLoopsRuns {
+		lines = append(lines, fmt.Sprintf("&nbsp;&nbsp;🔵 Agent Loops → <b>%s</b>", p.Project))
+	}
+	if summary.OpenClawGateway != nil {
+		lines = append(lines, "&nbsp;&nbsp;⚡ OpenClaw Gateway running")
+	}
+
+	// OpenClaw bots
+	var idleBots []string
+	for _, a := range agents {
+		if a.Type == "openclaw" {
+			idleBots = append(idleBots, a.DisplayName)
+		}
+	}
+	if len(idleBots) > 0 {
+		lines = append(lines, fmt.Sprintf("&nbsp;&nbsp;📡 %d OpenClaw bots: %s", len(idleBots), strings.Join(idleBots, ", ")))
+	}
+
+	// Tasks
+	var backlog, inProgress, blocked, review int
+	for _, t := range tasks {
+		switch t.Status {
+		case "backlog":
+			backlog++
+		case "in_progress":
+			inProgress++
+		case "blocked":
+			blocked++
+		case "review":
+			review++
+		}
+	}
+	lines = append(lines, "")
+	lines = append(lines, fmt.Sprintf("📋 <b>Tasks:</b> %d in progress, %d blocked, %d in review, %d in backlog", inProgress, blocked, review, backlog))
+
+	// Metrics
+	lines = append(lines, fmt.Sprintf("📊 <b>Lifetime:</b> %d created, %d completed", metrics.TasksCreated, metrics.TasksCompleted))
+
+	return strings.Join(lines, "<br/>")
+}
+
+// generateActiveAgentsReport lists who is currently working
+func (s *Server) generateActiveAgentsReport() string {
+	procs := ScanLiveProcesses()
+	summary := SummarizeProcesses(procs)
+
+	if summary.TotalActive == 0 {
+		return "💤 Nobody is working right now. All quiet."
+	}
+
+	var lines []string
+	lines = append(lines, fmt.Sprintf("🔥 <b>%d active sessions right now:</b>", summary.TotalActive))
+	for _, p := range summary.ClaudeCodeSessions {
+		lines = append(lines, fmt.Sprintf("&nbsp;&nbsp;🟢 Claude Code working on <b>%s</b> (PID %d)", p.Project, p.PID))
+	}
+	for _, p := range summary.AgentLoopsRuns {
+		lines = append(lines, fmt.Sprintf("&nbsp;&nbsp;🔵 Agent Loops building <b>%s</b> (PID %d)", p.Project, p.PID))
+	}
+	return strings.Join(lines, "<br/>")
+}
+
+// generateTaskReport lists tasks by status
+func (s *Server) generateTaskReport() string {
+	tasks := s.gatherTasks()
+	if len(tasks) == 0 {
+		return "No active tasks found."
+	}
+
+	var lines []string
+	statuses := []struct{ name, status, emoji string }{
+		{"In Progress", "in_progress", "🔵"},
+		{"Blocked", "blocked", "🔴"},
+		{"Review", "review", "🟣"},
+		{"Backlog", "backlog", "⚪"},
+	}
+
+	for _, s := range statuses {
+		var matching []string
+		for _, t := range tasks {
+			if t.Status == s.status {
+				matching = append(matching, fmt.Sprintf("<b>%s</b> %s [%s]", t.ID, t.Title, t.Priority))
+			}
+		}
+		if len(matching) > 0 {
+			lines = append(lines, fmt.Sprintf("%s <b>%s (%d):</b>", s.emoji, s.name, len(matching)))
+			for _, m := range matching {
+				lines = append(lines, "&nbsp;&nbsp;• "+m)
+			}
+		}
+	}
+
+	return strings.Join(lines, "<br/>")
 }
 
 // broadcastLoop periodically gathers state and pushes HTML fragments to all clients

@@ -281,9 +281,10 @@ const shellHTML = `<!DOCTYPE html>
       <div id="chat" class="flex-1 overflow-auto text-sm space-y-2">
         <p class="text-slate-500">ADB orchestrator starting...</p>
       </div>
-      <form hx-post="/chat" hx-swap="none" class="mt-3 flex gap-2">
-        <input name="message" type="text" placeholder="Message ADB..."
-          class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500" />
+      <form hx-post="/chat" hx-swap="none" hx-on::after-request="this.reset()" class="mt-3 flex gap-2">
+        <input name="message" type="text" placeholder="Ask: status report, who is working, tasks..."
+          class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500"
+          autocomplete="off" />
         <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium">Send</button>
       </form>
     </div>

@@ -43,7 +43,7 @@ func launchWorkflow(taskID, worktreePath string, resume bool) error {
 		fmt.Printf("Working directory: %s\n", worktreePath)
 		fmt.Println("Type 'exit' to return to the main shell.")
 
-		return launchInteractiveShell(worktreePath)
+		return launchInteractiveShell(taskID, worktreePath)
 	}
 
 	return nil
@@ -87,7 +87,7 @@ func launchClaudeCode(path string, resume bool) error {
 }
 
 // launchInteractiveShell launches an interactive shell in the specified directory
-func launchInteractiveShell(path string) error {
+func launchInteractiveShell(taskID, path string) error {
 	// Determine shell
 	shell := os.Getenv("SHELL")
 	if shell == "" {
@@ -103,7 +103,8 @@ func launchInteractiveShell(path string) error {
 
 	// Set environment variables
 	env := os.Environ()
-	env = append(env, fmt.Sprintf("ADB_TASK_ID=%s", path))
+	env = append(env, fmt.Sprintf("ADB_TASK_ID=%s", taskID))
+	env = append(env, fmt.Sprintf("ADB_WORKTREE_PATH=%s", path))
 	cmd.Env = env
 
 	// Run shell

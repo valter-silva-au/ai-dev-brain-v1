@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"time"
 
 	"github.com/valter-silva-au/ai-dev-brain/internal/integration"
@@ -15,7 +14,7 @@ import (
 // 2. Updates terminal state
 // 3. Launches Claude Code in the worktree
 // 4. Drops user into an interactive shell
-func launchWorkflow(taskID, worktreePath string) error {
+func launchWorkflow(taskID, worktreePath string, resume bool) error {
 	// Update terminal tab title
 	if err := renameTerminalTab(taskID); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to rename terminal tab: %v\n", err)
@@ -36,16 +35,18 @@ func launchWorkflow(taskID, worktreePath string) error {
 
 	// Launch Claude Code in worktree
 	fmt.Printf("Opening Claude Code in %s...\n", worktreePath)
-	if err := launchClaudeCode(worktreePath); err != nil {
+	if err := launchClaudeCode(worktreePath, resume); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to launch Claude Code: %v\n", err)
+
+		// Drop into interactive shell as fallback
+		fmt.Println("\nDropping into interactive shell...")
+		fmt.Printf("Working directory: %s\n", worktreePath)
+		fmt.Println("Type 'exit' to return to the main shell.")
+
+		return launchInteractiveShell(worktreePath)
 	}
 
-	// Drop into interactive shell
-	fmt.Println("\nDropping into interactive shell...")
-	fmt.Printf("Working directory: %s\n", worktreePath)
-	fmt.Println("Type 'exit' to return to the main shell.")
-
-	return launchInteractiveShell(worktreePath)
+	return nil
 }
 
 // renameTerminalTab renames the terminal tab using escape sequences
@@ -59,34 +60,27 @@ func renameTerminalTab(taskID string) error {
 	return nil
 }
 
-// launchClaudeCode launches Claude Code in the specified directory
-func launchClaudeCode(path string) error {
-	var cmd *exec.Cmd
-
-	switch runtime.GOOS {
-	case "darwin":
-		// macOS: Use 'open -a' to launch the app
-		cmd = exec.Command("open", "-a", "Claude Code", path)
-	case "linux":
-		// Linux: Try common editor commands
-		// First try 'claude' if installed, otherwise fallback to 'code'
-		if _, err := exec.LookPath("claude"); err == nil {
-			cmd = exec.Command("claude", path)
-		} else if _, err := exec.LookPath("code"); err == nil {
-			cmd = exec.Command("code", path)
-		} else {
-			return fmt.Errorf("no suitable editor found (claude or code)")
-		}
-	case "windows":
-		// Windows: Use 'start' command
-		cmd = exec.Command("cmd", "/c", "start", "claude", path)
-	default:
-		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
+// launchClaudeCode launches Claude Code in the specified directory.
+// If resume is true, it passes --continue to resume the most recent conversation.
+func launchClaudeCode(path string, resume bool) error {
+	claudePath, err := exec.LookPath("claude")
+	if err != nil {
+		return fmt.Errorf("claude CLI not found in PATH: %w", err)
 	}
 
-	// Run in background - don't wait for it to finish
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start Claude Code: %w", err)
+	args := []string{}
+	if resume {
+		args = append(args, "--continue")
+	}
+
+	cmd := exec.Command(claudePath, args...)
+	cmd.Dir = path
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("claude exited with error: %w", err)
 	}
 
 	return nil

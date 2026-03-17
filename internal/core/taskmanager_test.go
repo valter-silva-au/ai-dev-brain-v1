@@ -443,10 +443,11 @@ func TestTaskManager_Resume_ArchivedTask(t *testing.T) {
 func TestTaskManager_Archive(t *testing.T) {
 	tm, backlogStore, eventLogger, _, worktreeRemover, tempDir := createTestTaskManager(t)
 
-	// Create a task first
+	// Create a task with repo so worktree is created
 	opts := CreateTaskOpts{
 		Title:    "Test Task",
 		TaskType: models.TaskTypeFeat,
+		Repo:     "github.com/test/repo",
 	}
 	task, err := tm.Create(opts)
 	if err != nil {
@@ -628,10 +629,11 @@ func TestTaskManager_UpdatePriority(t *testing.T) {
 func TestTaskManager_Cleanup(t *testing.T) {
 	tm, backlogStore, eventLogger, _, worktreeRemover, _ := createTestTaskManager(t)
 
-	// Create a task
+	// Create a task with repo so worktree is created
 	opts := CreateTaskOpts{
 		Title:    "Test Task",
 		TaskType: models.TaskTypeFeat,
+		Repo:     "github.com/test/repo",
 	}
 	task, err := tm.Create(opts)
 	if err != nil {
@@ -672,10 +674,11 @@ func TestTaskManager_Cleanup(t *testing.T) {
 func TestTaskManager_Delete(t *testing.T) {
 	tm, backlogStore, eventLogger, _, worktreeRemover, tempDir := createTestTaskManager(t)
 
-	// Create a task
+	// Create a task with repo so worktree is created
 	opts := CreateTaskOpts{
 		Title:    "Test Task",
 		TaskType: models.TaskTypeFeat,
+		Repo:     "github.com/test/repo",
 	}
 	task, err := tm.Create(opts)
 	if err != nil {
@@ -719,6 +722,49 @@ func TestTaskManager_Delete(t *testing.T) {
 	}
 }
 
+func TestTaskManager_Create_WithoutRepo_NoWorktree(t *testing.T) {
+	tm, backlogStore, _, worktreeCreator, _, tempDir := createTestTaskManager(t)
+
+	// Create a task without specifying a repo
+	opts := CreateTaskOpts{
+		Title:    "Idea Task",
+		TaskType: models.TaskTypeSpike,
+	}
+
+	task, err := tm.Create(opts)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	// Verify task was created in backlog
+	storedTask, err := backlogStore.GetTask(task.ID)
+	if err != nil {
+		t.Fatalf("Failed to get task from backlog: %v", err)
+	}
+	if storedTask.ID != task.ID {
+		t.Errorf("Task ID mismatch in backlog")
+	}
+
+	// Verify NO worktree was created
+	if len(worktreeCreator.worktrees) != 0 {
+		t.Errorf("Expected no worktrees, got %d", len(worktreeCreator.worktrees))
+	}
+
+	// Verify task has no worktree path or branch
+	if task.WorktreePath != "" {
+		t.Errorf("Expected empty worktree path, got %s", task.WorktreePath)
+	}
+	if task.Branch != "" {
+		t.Errorf("Expected empty branch, got %s", task.Branch)
+	}
+
+	// Verify ticket directory was still created
+	taskDir := filepath.Join(tempDir, "tickets", task.ID)
+	if _, err := os.Stat(taskDir); os.IsNotExist(err) {
+		t.Errorf("Task directory was not created: %s", taskDir)
+	}
+}
+
 func TestTaskManager_Create_WithDefaults(t *testing.T) {
 	tm, _, _, _, _, _ := createTestTaskManager(t)
 
@@ -753,6 +799,7 @@ func TestTaskManager_Create_RollbackOnWorktreeFailure(t *testing.T) {
 	opts := CreateTaskOpts{
 		Title:    "Test Task",
 		TaskType: models.TaskTypeFeat,
+		Repo:     "github.com/test/repo",
 	}
 
 	_, err := tm.Create(opts)

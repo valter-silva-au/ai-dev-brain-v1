@@ -166,10 +166,10 @@ func (tm *TaskManager) Create(opts CreateTaskOpts) (*models.Task, error) {
 	// Update task with paths
 	task.TicketPath = result.TaskDir
 
-	// Create worktree
-	branchName := fmt.Sprintf("task/%s", taskID)
-	worktreePath := filepath.Join(tm.worktreesDir, taskID)
-	if tm.worktreeCreator != nil {
+	// Create worktree only when a repository is specified
+	if opts.Repo != "" && tm.worktreeCreator != nil {
+		branchName := fmt.Sprintf("task/%s", taskID)
+		worktreePath := filepath.Join(tm.worktreesDir, taskID)
 		if err := tm.worktreeCreator.CreateWorktree(taskID, branchName, worktreePath, opts.Repo); err != nil {
 			// Rollback: remove task dir and backlog entry
 			_ = os.RemoveAll(result.TaskDir)
@@ -189,22 +189,22 @@ func (tm *TaskManager) Create(opts CreateTaskOpts) (*models.Task, error) {
 	// Update backlog with worktree info
 	if err := tm.backlogStore.UpdateTask(*task); err != nil {
 		// Rollback: remove worktree and task dir
-		if tm.worktreeRemover != nil {
-			_ = tm.worktreeRemover.RemoveWorktree(worktreePath)
+		if tm.worktreeRemover != nil && task.WorktreePath != "" {
+			_ = tm.worktreeRemover.RemoveWorktree(task.WorktreePath)
 		}
 		_ = os.RemoveAll(result.TaskDir)
 		_ = tm.backlogStore.RemoveTask(taskID)
 		return nil, fmt.Errorf("failed to update task in backlog: %w", err)
 	}
 
-	// Write terminal state
-	if tm.terminalStateUpdater != nil {
+	// Write terminal state (only if worktree was created)
+	if tm.terminalStateUpdater != nil && task.WorktreePath != "" {
 		terminalState := map[string]interface{}{
 			"task_id":    taskID,
 			"status":     task.Status,
 			"created_at": task.Created,
 		}
-		if err := tm.terminalStateUpdater.WriteTerminalState(worktreePath, taskID, terminalState); err != nil {
+		if err := tm.terminalStateUpdater.WriteTerminalState(task.WorktreePath, taskID, terminalState); err != nil {
 			// Non-fatal: log but continue
 			fmt.Fprintf(os.Stderr, "Warning: failed to write terminal state: %v\n", err)
 		}

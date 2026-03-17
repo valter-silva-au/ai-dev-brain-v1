@@ -105,8 +105,7 @@ type worktreeCreatorAdapter struct {
 
 func (a *worktreeCreatorAdapter) CreateWorktree(taskID, branchName, worktreePath, repoPath string) error {
 	if repoPath == "" {
-		// No repo specified — use the ADB workspace itself as the repo
-		repoPath = a.basePath
+		return fmt.Errorf("repoPath is required for worktree creation")
 	}
 	baseBranch := "main"
 

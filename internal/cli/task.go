@@ -112,7 +112,14 @@ func newTaskCreateCmd() *cobra.Command {
 			// Launch workflow if worktree was created
 			if task.WorktreePath != "" {
 				fmt.Println("\nLaunching workflow...")
-				return launchWorkflow(task.ID, task.WorktreePath, false)
+				return launchWorkflow(taskLaunchInfo{
+					TaskID:       task.ID,
+					TaskType:     string(task.Type),
+					Priority:     string(task.Priority),
+					Status:       string(task.Status),
+					WorktreePath: task.WorktreePath,
+					Branch:       task.Branch,
+				})
 			}
 
 			return nil
@@ -156,7 +163,15 @@ func newTaskResumeCmd() *cobra.Command {
 			// Launch workflow if worktree exists
 			if task.WorktreePath != "" {
 				fmt.Println("\nLaunching workflow...")
-				return launchWorkflow(task.ID, task.WorktreePath, true)
+				return launchWorkflow(taskLaunchInfo{
+					TaskID:       task.ID,
+					TaskType:     string(task.Type),
+					Priority:     string(task.Priority),
+					Status:       string(task.Status),
+					WorktreePath: task.WorktreePath,
+					Branch:       task.Branch,
+					Resume:       true,
+				})
 			}
 
 			return nil

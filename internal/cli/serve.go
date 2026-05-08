@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/valter-silva-au/ai-dev-brain/internal/hive"
@@ -148,7 +147,7 @@ func daemonStart(port int, tv bool) error {
 	cmd.Env = os.Environ()
 	cmd.Stdout = nil
 	cmd.Stderr = nil
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	detachProcess(cmd)
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start daemon: %w", err)
@@ -188,7 +187,7 @@ func daemonStop() error {
 		return fmt.Errorf("cannot find process %d: %w", pid, err)
 	}
 
-	if err := process.Signal(syscall.SIGTERM); err != nil {
+	if err := stopProcess(process); err != nil {
 		// Process might already be dead
 		_ = os.Remove(pidFilePath())
 		fmt.Printf("✓ Dashboard stopped (PID %d was not running)\n", pid)
@@ -233,9 +232,7 @@ func readPID() (int, bool) {
 		return pid, false
 	}
 
-	// On Unix, FindProcess always succeeds — use Signal(0) to check
-	err = process.Signal(syscall.Signal(0))
-	return pid, err == nil
+	return pid, processAlive(process)
 }
 
 // openBrowser opens the default browser

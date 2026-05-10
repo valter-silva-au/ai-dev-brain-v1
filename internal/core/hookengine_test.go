@@ -99,6 +99,103 @@ func TestHookEngine_ProcessPreToolUse(t *testing.T) {
 			t.Errorf("ProcessPreToolUse() error = %v, want nil", err)
 		}
 	})
+
+	t.Run("Block vendor/ edit with Windows backslash path", func(t *testing.T) {
+		event := &hooks.PreToolUseEvent{
+			ToolName: "Edit",
+			Parameters: map[string]interface{}{
+				"file_path": `C:\Users\dev\repo\vendor\package\file.go`,
+			},
+		}
+
+		err := engine.ProcessPreToolUse(event)
+		if err == nil {
+			t.Errorf("ProcessPreToolUse() error = nil, want error for Windows-style vendor path")
+		}
+	})
+
+	t.Run("Block go.sum edit with Windows backslash path", func(t *testing.T) {
+		event := &hooks.PreToolUseEvent{
+			ToolName: "Write",
+			Parameters: map[string]interface{}{
+				"file_path": `C:\Users\dev\repo\go.sum`,
+			},
+		}
+
+		err := engine.ProcessPreToolUse(event)
+		if err == nil {
+			t.Errorf("ProcessPreToolUse() error = nil, want error for Windows-style go.sum path")
+		}
+	})
+
+	t.Run("Block bare go.sum path", func(t *testing.T) {
+		event := &hooks.PreToolUseEvent{
+			ToolName: "Write",
+			Parameters: map[string]interface{}{
+				"file_path": "go.sum",
+			},
+		}
+
+		err := engine.ProcessPreToolUse(event)
+		if err == nil {
+			t.Errorf("ProcessPreToolUse() error = nil, want error for bare go.sum")
+		}
+	})
+
+	t.Run("Allow file with vendor in name but not in path", func(t *testing.T) {
+		// Guard against false positives like "vendorlist.go"
+		event := &hooks.PreToolUseEvent{
+			ToolName: "Edit",
+			Parameters: map[string]interface{}{
+				"file_path": "/path/to/vendorlist.go",
+			},
+		}
+
+		err := engine.ProcessPreToolUse(event)
+		if err != nil {
+			t.Errorf("ProcessPreToolUse() error = %v, want nil for file named vendorlist.go", err)
+		}
+	})
+
+	t.Run("Allow file named something.go.sum", func(t *testing.T) {
+		// Previously the check matched any HasSuffix "go.sum" including
+		// "notes.go.sum" — tighten it to real go.sum files only.
+		event := &hooks.PreToolUseEvent{
+			ToolName: "Edit",
+			Parameters: map[string]interface{}{
+				"file_path": "/path/to/notes.go.sum",
+			},
+		}
+
+		err := engine.ProcessPreToolUse(event)
+		if err != nil {
+			t.Errorf("ProcessPreToolUse() error = %v, want nil for notes.go.sum", err)
+		}
+	})
+}
+
+func TestNormalisePath(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"empty", "", ""},
+		{"forward slashes preserved", "/path/to/file.go", "/path/to/file.go"},
+		{"windows backslashes converted", `C:\Users\dev\repo\file.go`, "C:/Users/dev/repo/file.go"},
+		{"mixed separators", `C:\Users/dev\repo/file.go`, "C:/Users/dev/repo/file.go"},
+		{"dot segments cleaned", "/path/./to/../to/file.go", "/path/to/file.go"},
+		{"trailing slash cleaned", "/path/to/dir/", "/path/to/dir"},
+		{"bare filename", "go.sum", "go.sum"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := normalisePath(tc.in)
+			if got != tc.want {
+				t.Errorf("normalisePath(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
 }
 
 func TestHookEngine_ProcessPostToolUse(t *testing.T) {

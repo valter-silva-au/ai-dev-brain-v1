@@ -29,6 +29,18 @@ func (he *HookEngine) PreventRecursion() bool {
 	return os.Getenv("ADB_HOOK_ACTIVE") == "1"
 }
 
+// normalisePath returns a cleaned, forward-slash form of path so that
+// subsequent string matching is consistent across operating systems.
+// Windows Claude Code hook events can carry backslash-separated paths
+// (e.g. `C:\Users\me\repo\vendor\foo.go`); without normalisation the
+// vendor/go.sum guard silently no-ops on Windows.
+func normalisePath(path string) string {
+	if path == "" {
+		return ""
+	}
+	return filepath.ToSlash(filepath.Clean(path))
+}
+
 // ProcessPreToolUse handles PreToolUse hooks - blocking validation
 func (he *HookEngine) ProcessPreToolUse(event *hooks.PreToolUseEvent) error {
 	if he.PreventRecursion() {
@@ -38,7 +50,8 @@ func (he *HookEngine) ProcessPreToolUse(event *hooks.PreToolUseEvent) error {
 	// Block edits to vendor/ and go.sum
 	if event.ToolName == "Edit" || event.ToolName == "Write" {
 		if filePath, ok := event.Parameters["file_path"].(string); ok {
-			if strings.Contains(filePath, "/vendor/") || strings.HasSuffix(filePath, "go.sum") {
+			normalised := normalisePath(filePath)
+			if strings.Contains(normalised, "/vendor/") || strings.HasSuffix(normalised, "/go.sum") || normalised == "go.sum" {
 				return fmt.Errorf("blocked: modifications to vendor/ and go.sum are not allowed")
 			}
 		}

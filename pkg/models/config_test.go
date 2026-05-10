@@ -86,6 +86,9 @@ func TestDefaultHookConfig(t *testing.T) {
 		{"auto_format", func(c HookConfig) bool { return c.AutoFormat }, true},
 		{"block_vendor_edits", func(c HookConfig) bool { return c.BlockVendorEdits }, true},
 		{"evidence_gate disabled by default", func(c HookConfig) bool { return c.EvidenceGate.Enabled }, false},
+		{"operator kill-switch disabled by default", func(c HookConfig) bool { return c.OperatorControls.KillSwitchEnabled }, false},
+		{"operator steer disabled by default", func(c HookConfig) bool { return c.OperatorControls.SteerEnabled }, false},
+		{"memory disabled by default", func(c HookConfig) bool { return c.Memory.Enabled }, false},
 	}
 
 	for _, tt := range tests {

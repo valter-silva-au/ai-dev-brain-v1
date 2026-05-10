@@ -419,6 +419,120 @@ func TestHookEngine_KillSwitch_DisabledByDefault(t *testing.T) {
 	}
 }
 
+func TestHookEngine_Steer_ConsumesFileAndPrintsOnce(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "steer-once-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	// Redirect stderr to a pipe so we can assert on what the engine prints.
+	r, w, _ := os.Pipe()
+	origStderr := os.Stderr
+	os.Stderr = w
+	defer func() { os.Stderr = origStderr }()
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Operator: OperatorConfig{SteerEnabled: true},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Write STEER.md — first call should consume it.
+	steer := filepath.Join(tmp, "STEER.md")
+	if err := os.WriteFile(steer, []byte("pivot: focus on auth refactor\r\n"), 0o644); err != nil {
+		t.Fatalf("writing STEER.md: %v", err)
+	}
+
+	evt := &hooks.PreToolUseEvent{ToolName: "Read", Parameters: map[string]interface{}{"file_path": "foo.go"}}
+	if err := engine.ProcessPreToolUse(evt); err != nil {
+		t.Fatalf("first call error = %v", err)
+	}
+	// Second call with no STEER.md must not print again.
+	if err := engine.ProcessPreToolUse(evt); err != nil {
+		t.Fatalf("second call error = %v", err)
+	}
+
+	w.Close()
+	buf := make([]byte, 4096)
+	n, _ := r.Read(buf)
+	output := string(buf[:n])
+
+	if !strings.Contains(output, "OPERATOR STEERING: pivot: focus on auth refactor") {
+		t.Errorf("expected steering message in stderr, got %q", output)
+	}
+	// Count occurrences: exactly 1.
+	if strings.Count(output, "OPERATOR STEERING:") != 1 {
+		t.Errorf("steering message should appear once, got %d in %q", strings.Count(output, "OPERATOR STEERING:"), output)
+	}
+
+	// STEER.md is gone, STEER.md.consumed exists.
+	if _, err := os.Stat(steer); !os.IsNotExist(err) {
+		t.Errorf("STEER.md should be gone after consume, err = %v", err)
+	}
+	if _, err := os.Stat(steer + ".consumed"); err != nil {
+		t.Errorf("STEER.md.consumed should exist, err = %v", err)
+	}
+}
+
+func TestHookEngine_Steer_DisabledByDefault(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "steer-off-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngine(tmp) // steer off
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	steer := filepath.Join(tmp, "STEER.md")
+	if err := os.WriteFile(steer, []byte("should not be touched"), 0o644); err != nil {
+		t.Fatalf("writing STEER.md: %v", err)
+	}
+
+	evt := &hooks.PreToolUseEvent{ToolName: "Read", Parameters: map[string]interface{}{"file_path": "foo.go"}}
+	if err := engine.ProcessPreToolUse(evt); err != nil {
+		t.Fatalf("call error = %v", err)
+	}
+	// STEER.md must remain untouched when steer is disabled.
+	if _, err := os.Stat(steer); err != nil {
+		t.Errorf("STEER.md should still exist with steer disabled, err = %v", err)
+	}
+}
+
+func TestHookEngine_Steer_EmptyFileSkipsPrint(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "steer-empty-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	r, w, _ := os.Pipe()
+	origStderr := os.Stderr
+	os.Stderr = w
+	defer func() { os.Stderr = origStderr }()
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Operator: OperatorConfig{SteerEnabled: true},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	steer := filepath.Join(tmp, "STEER.md")
+	if err := os.WriteFile(steer, []byte("\r\n  \t"), 0o644); err != nil {
+		t.Fatalf("writing empty-ish STEER.md: %v", err)
+	}
+
+	evt := &hooks.PreToolUseEvent{ToolName: "Read", Parameters: map[string]interface{}{"file_path": "foo.go"}}
+	_ = engine.ProcessPreToolUse(evt)
+
+	w.Close()
+	buf := make([]byte, 256)
+	n, _ := r.Read(buf)
+	output := string(buf[:n])
+	if strings.Contains(output, "OPERATOR STEERING:") {
+		t.Errorf("empty-ish file should not produce a steering print, got %q", output)
+	}
+}
+
 func TestHookEngine_EvidenceGate_ClearedOnSessionEnd(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "evidence-cleared-*")
 	if err != nil {

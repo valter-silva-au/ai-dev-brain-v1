@@ -22,9 +22,9 @@ import (
 // form of the input path, so both `screenshots/foo.png` and
 // `screenshots\foo.png` match `screenshots/*.png`.
 type EvidenceGateConfig struct {
-	Enabled       bool
-	WritePaths    []string
-	ReadPatterns  []string
+	Enabled      bool
+	WritePaths   []string
+	ReadPatterns []string
 }
 
 // OperatorConfig opts into operator-in-the-loop controls over long-running
@@ -123,6 +123,14 @@ func (he *HookEngine) ProcessPreToolUse(event *hooks.PreToolUseEvent) error {
 		return nil
 	}
 
+	// Operator steering: surface a one-shot message from STEER.md on
+	// stderr, then consume the file via os.Rename so concurrent
+	// invocations don't double-read or double-delete. Skipped inside
+	// recursion to avoid duplicate prints in the same logical tool use.
+	if he.opts.Operator.SteerEnabled {
+		he.consumeSteerFile()
+	}
+
 	filePath, hasFilePath := event.Parameters["file_path"].(string)
 	normalised := ""
 	if hasFilePath {
@@ -175,6 +183,38 @@ func matchesAny(path string, patterns []string) bool {
 		}
 	}
 	return false
+}
+
+// consumeSteerFile looks for the configured SteerFile at basePath and,
+// if present, atomically renames it to `<name>.consumed` before reading
+// and printing its contents. The rename is the concurrency primitive:
+// on all three supported OSes it is atomic, so at most one concurrent
+// hook invocation observes the rename succeeding. The other gets
+// os.ErrNotExist from the subsequent ReadFile and silently returns.
+// Failures are non-fatal; they log to stderr and do not block the tool
+// call.
+func (he *HookEngine) consumeSteerFile() {
+	src := filepath.Join(he.basePath, he.opts.Operator.SteerFile)
+	dst := src + ".consumed"
+
+	// os.Rename with a non-existent src returns os.ErrNotExist.
+	if err := os.Rename(src, dst); err != nil {
+		if !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Warning: failed to consume steer file: %v\n", err)
+		}
+		return
+	}
+
+	data, err := os.ReadFile(dst)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to read consumed steer file: %v\n", err)
+		return
+	}
+	msg := strings.TrimRight(string(data), "\r\n \t")
+	if msg == "" {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "OPERATOR STEERING: %s\n", msg)
 }
 
 // hasMatchingEvidence reports whether any previously-recorded evidence

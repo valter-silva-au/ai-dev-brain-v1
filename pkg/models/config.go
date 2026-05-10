@@ -16,21 +16,21 @@ type TeamRoutingConfig struct {
 
 // HookConfig holds hook execution settings
 type HookConfig struct {
-	Enabled                 bool                     `mapstructure:"enabled" yaml:"enabled"`
-	PreToolUse              bool                     `mapstructure:"pre_tool_use" yaml:"pre_tool_use"`
-	PostToolUse             bool                     `mapstructure:"post_tool_use" yaml:"post_tool_use"`
-	Stop                    bool                     `mapstructure:"stop" yaml:"stop"`
-	TaskCompleted           bool                     `mapstructure:"task_completed" yaml:"task_completed"`
-	SessionEnd              bool                     `mapstructure:"session_end" yaml:"session_end"`
-	KnowledgeExtraction     bool                     `mapstructure:"knowledge_extraction" yaml:"knowledge_extraction"`
-	ConflictDetection       bool                     `mapstructure:"conflict_detection" yaml:"conflict_detection"`
-	AutoFormat              bool                     `mapstructure:"auto_format" yaml:"auto_format"`
-	BlockVendorEdits        bool                     `mapstructure:"block_vendor_edits" yaml:"block_vendor_edits"`
-	AllowedVendorPatterns   []string                 `mapstructure:"allowed_vendor_patterns" yaml:"allowed_vendor_patterns,omitempty"`
-	CustomPreToolUseScript  string                   `mapstructure:"custom_pre_tool_use_script" yaml:"custom_pre_tool_use_script,omitempty"`
-	CustomPostToolUseScript string                   `mapstructure:"custom_post_tool_use_script" yaml:"custom_post_tool_use_script,omitempty"`
-	EvidenceGate            EvidenceGateHookConfig   `mapstructure:"evidence_gate" yaml:"evidence_gate,omitempty"`
-	OperatorControls        OperatorControlsConfig   `mapstructure:"operator_controls" yaml:"operator_controls,omitempty"`
+	Enabled                 bool                   `mapstructure:"enabled" yaml:"enabled"`
+	PreToolUse              bool                   `mapstructure:"pre_tool_use" yaml:"pre_tool_use"`
+	PostToolUse             bool                   `mapstructure:"post_tool_use" yaml:"post_tool_use"`
+	Stop                    bool                   `mapstructure:"stop" yaml:"stop"`
+	TaskCompleted           bool                   `mapstructure:"task_completed" yaml:"task_completed"`
+	SessionEnd              bool                   `mapstructure:"session_end" yaml:"session_end"`
+	KnowledgeExtraction     bool                   `mapstructure:"knowledge_extraction" yaml:"knowledge_extraction"`
+	ConflictDetection       bool                   `mapstructure:"conflict_detection" yaml:"conflict_detection"`
+	AutoFormat              bool                   `mapstructure:"auto_format" yaml:"auto_format"`
+	BlockVendorEdits        bool                   `mapstructure:"block_vendor_edits" yaml:"block_vendor_edits"`
+	AllowedVendorPatterns   []string               `mapstructure:"allowed_vendor_patterns" yaml:"allowed_vendor_patterns,omitempty"`
+	CustomPreToolUseScript  string                 `mapstructure:"custom_pre_tool_use_script" yaml:"custom_pre_tool_use_script,omitempty"`
+	CustomPostToolUseScript string                 `mapstructure:"custom_post_tool_use_script" yaml:"custom_post_tool_use_script,omitempty"`
+	EvidenceGate            EvidenceGateHookConfig `mapstructure:"evidence_gate" yaml:"evidence_gate,omitempty"`
+	OperatorControls        OperatorControlsConfig `mapstructure:"operator_controls" yaml:"operator_controls,omitempty"`
 }
 
 // EvidenceGateHookConfig opts into the evidence-read gate, a

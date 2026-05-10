@@ -30,6 +30,7 @@ type HookConfig struct {
 	CustomPreToolUseScript  string                   `mapstructure:"custom_pre_tool_use_script" yaml:"custom_pre_tool_use_script,omitempty"`
 	CustomPostToolUseScript string                   `mapstructure:"custom_post_tool_use_script" yaml:"custom_post_tool_use_script,omitempty"`
 	EvidenceGate            EvidenceGateHookConfig   `mapstructure:"evidence_gate" yaml:"evidence_gate,omitempty"`
+	OperatorControls        OperatorControlsConfig   `mapstructure:"operator_controls" yaml:"operator_controls,omitempty"`
 }
 
 // EvidenceGateHookConfig opts into the evidence-read gate, a
@@ -41,6 +42,18 @@ type EvidenceGateHookConfig struct {
 	Enabled      bool     `mapstructure:"enabled" yaml:"enabled"`
 	WritePaths   []string `mapstructure:"write_paths" yaml:"write_paths,omitempty"`
 	ReadPatterns []string `mapstructure:"read_patterns" yaml:"read_patterns,omitempty"`
+}
+
+// OperatorControlsConfig opts into operator-in-the-loop controls over
+// long-running agents: a kill-switch that halts all PreToolUse when a
+// sentinel file is present, and mid-run steering that surfaces a
+// message from a file to the agent once. Defaults to disabled.
+// Inspired by anthropics/cwc-long-running-agents.
+type OperatorControlsConfig struct {
+	KillSwitchEnabled bool   `mapstructure:"kill_switch_enabled" yaml:"kill_switch_enabled"`
+	KillSwitchFile    string `mapstructure:"kill_switch_file" yaml:"kill_switch_file,omitempty"`
+	SteerEnabled      bool   `mapstructure:"steer_enabled" yaml:"steer_enabled"`
+	SteerFile         string `mapstructure:"steer_file" yaml:"steer_file,omitempty"`
 }
 
 // CLIAliasConfig holds CLI alias definitions

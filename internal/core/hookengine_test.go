@@ -332,6 +332,93 @@ func TestHookEngine_EvidenceGate_WindowsBackslashPathsMatch(t *testing.T) {
 	}
 }
 
+func TestHookEngine_KillSwitch_BlocksWhenSentinelPresent(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "killswitch-on-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Operator: OperatorConfig{KillSwitchEnabled: true},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Without the sentinel, calls pass.
+	ok := &hooks.PreToolUseEvent{ToolName: "Read", Parameters: map[string]interface{}{"file_path": "foo.go"}}
+	if err := engine.ProcessPreToolUse(ok); err != nil {
+		t.Fatalf("pre-sentinel ProcessPreToolUse should pass, got %v", err)
+	}
+
+	// Touch AGENT_STOP: any call blocks.
+	sentinel := filepath.Join(tmp, "AGENT_STOP")
+	if err := os.WriteFile(sentinel, []byte{}, 0o644); err != nil {
+		t.Fatalf("writing sentinel: %v", err)
+	}
+	if err := engine.ProcessPreToolUse(ok); err == nil {
+		t.Errorf("sentinel present: expected block, got nil")
+	} else if !strings.Contains(err.Error(), "kill-switch") {
+		t.Errorf("expected kill-switch message, got %v", err)
+	}
+
+	// Remove AGENT_STOP: calls pass again.
+	if err := os.Remove(sentinel); err != nil {
+		t.Fatalf("removing sentinel: %v", err)
+	}
+	if err := engine.ProcessPreToolUse(ok); err != nil {
+		t.Errorf("after sentinel removal: expected pass, got %v", err)
+	}
+}
+
+func TestHookEngine_KillSwitch_BeatsRecursionGuard(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "killswitch-recursion-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Operator: OperatorConfig{KillSwitchEnabled: true},
+	})
+
+	// Simulate we are inside a recursive hook invocation.
+	os.Setenv("ADB_HOOK_ACTIVE", "1")
+	defer os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Sentinel present: kill-switch must fire even though recursion
+	// would normally cause ProcessPreToolUse to return nil early.
+	sentinel := filepath.Join(tmp, "AGENT_STOP")
+	if err := os.WriteFile(sentinel, []byte{}, 0o644); err != nil {
+		t.Fatalf("writing sentinel: %v", err)
+	}
+	evt := &hooks.PreToolUseEvent{ToolName: "Read", Parameters: map[string]interface{}{"file_path": "foo.go"}}
+	if err := engine.ProcessPreToolUse(evt); err == nil {
+		t.Errorf("expected kill-switch to block despite recursion guard, got nil")
+	}
+}
+
+func TestHookEngine_KillSwitch_DisabledByDefault(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "killswitch-off-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngine(tmp) // zero options: kill-switch off
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Even with the file present, a caller that didn't opt in is
+	// unaffected — the file could be anything to them.
+	sentinel := filepath.Join(tmp, "AGENT_STOP")
+	if err := os.WriteFile(sentinel, []byte{}, 0o644); err != nil {
+		t.Fatalf("writing sentinel: %v", err)
+	}
+	evt := &hooks.PreToolUseEvent{ToolName: "Read", Parameters: map[string]interface{}{"file_path": "foo.go"}}
+	if err := engine.ProcessPreToolUse(evt); err != nil {
+		t.Errorf("disabled kill-switch must ignore sentinel file, got %v", err)
+	}
+}
+
 func TestHookEngine_EvidenceGate_ClearedOnSessionEnd(t *testing.T) {
 	tmp, err := os.MkdirTemp("", "evidence-cleared-*")
 	if err != nil {

@@ -27,10 +27,42 @@ type EvidenceGateConfig struct {
 	ReadPatterns  []string
 }
 
+// OperatorConfig opts into operator-in-the-loop controls over long-running
+// agents: a kill-switch (KillSwitchFile present at basePath → block all
+// PreToolUse), and mid-run steering (SteerFile at basePath → surface its
+// contents on stderr once and consume the file). These correspond to the
+// kill-switch.sh and steer.sh patterns from
+// anthropics/cwc-long-running-agents.
+//
+// Empty file names mean the feature is disabled, even when the containing
+// struct's zero value is otherwise in play. NewHookEngine installs the
+// conventional names (AGENT_STOP, STEER.md) on callers who opt in but do
+// not override them.
+type OperatorConfig struct {
+	KillSwitchEnabled bool
+	KillSwitchFile    string
+	SteerEnabled      bool
+	SteerFile         string
+}
+
 // HookEngineOptions carries opt-in behaviours for HookEngine. Zero value
 // is the legacy behaviour: no cwc-long-running-agents features active.
 type HookEngineOptions struct {
 	Evidence EvidenceGateConfig
+	Operator OperatorConfig
+}
+
+// operatorWithDefaults fills unset file names with the conventional
+// defaults when the feature is enabled. Lets callers opt-in with a
+// single Enabled: true.
+func operatorWithDefaults(op OperatorConfig) OperatorConfig {
+	if op.KillSwitchEnabled && op.KillSwitchFile == "" {
+		op.KillSwitchFile = "AGENT_STOP"
+	}
+	if op.SteerEnabled && op.SteerFile == "" {
+		op.SteerFile = "STEER.md"
+	}
+	return op
 }
 
 // HookEngine processes Claude Code hook events with hybrid shell/Go architecture
@@ -49,6 +81,7 @@ func NewHookEngine(basePath string) *HookEngine {
 
 // NewHookEngineWithOptions creates a hook engine with explicit options.
 func NewHookEngineWithOptions(basePath string, opts HookEngineOptions) *HookEngine {
+	opts.Operator = operatorWithDefaults(opts.Operator)
 	return &HookEngine{
 		basePath: basePath,
 		tracker:  hooks.NewChangeTracker(basePath),
@@ -76,6 +109,16 @@ func normalisePath(path string) string {
 
 // ProcessPreToolUse handles PreToolUse hooks - blocking validation
 func (he *HookEngine) ProcessPreToolUse(event *hooks.PreToolUseEvent) error {
+	// Kill-switch runs *before* the recursion guard: an operator halt
+	// must win even when a hook invokes itself. A visible message tells
+	// the operator exactly which file to remove to resume.
+	if he.opts.Operator.KillSwitchEnabled {
+		path := filepath.Join(he.basePath, he.opts.Operator.KillSwitchFile)
+		if _, err := os.Stat(path); err == nil {
+			return fmt.Errorf("blocked: operator kill-switch active (remove %q to resume)", path)
+		}
+	}
+
 	if he.PreventRecursion() {
 		return nil
 	}

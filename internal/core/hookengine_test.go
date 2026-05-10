@@ -685,6 +685,40 @@ func TestHookEngine_ProcessPostToolUse(t *testing.T) {
 	})
 }
 
+// TestHookEngine_FormatGoFile_NonExistentPath is a regression test for
+// the silent-exit-2 failure when a PostToolUse event carries a path that
+// does not resolve on the current platform (e.g. Git-Bash-form
+// `/tmp/foo.go` on Windows where Go's stdlib resolves natively). The
+// guard in formatGoFile should log a clear warning and return nil rather
+// than letting gofmt fail with an opaque exit code.
+func TestHookEngine_FormatGoFile_NonExistentPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	engine := NewHookEngine(tmpDir)
+
+	// Redirect stderr so we can assert on the warning.
+	r, w, _ := os.Pipe()
+	origStderr := os.Stderr
+	os.Stderr = w
+	defer func() { os.Stderr = origStderr }()
+
+	err := engine.formatGoFile(filepath.Join(tmpDir, "does-not-exist.go"))
+
+	_ = w.Close()
+	buf := make([]byte, 4096)
+	n, _ := r.Read(buf)
+	output := string(buf[:n])
+
+	if err != nil {
+		t.Errorf("formatGoFile(missing) should return nil, got %v", err)
+	}
+	if !strings.Contains(output, "skipping gofmt") {
+		t.Errorf("expected 'skipping gofmt' in stderr, got %q", output)
+	}
+	if !strings.Contains(output, "does not resolve") {
+		t.Errorf("expected 'does not resolve' in stderr, got %q", output)
+	}
+}
+
 func TestHookEngine_ProcessStop(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "hookengine-test-*")
 	if err != nil {

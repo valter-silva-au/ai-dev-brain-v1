@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -317,6 +318,9 @@ func TestGenerateTaskID_DirectoryCreation(t *testing.T) {
 }
 
 func TestGenerateTaskID_FilePermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows FS does not preserve Unix mode bits; os.Stat reports 0o666 regardless of the 0o644 supplied at Open. Real fix would assert writability instead of exact mode match — tracked as a follow-up.")
+	}
 	tempDir := t.TempDir()
 	counterFile := filepath.Join(tempDir, ".task_counter")
 

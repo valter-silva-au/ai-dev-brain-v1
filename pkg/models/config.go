@@ -31,6 +31,7 @@ type HookConfig struct {
 	CustomPostToolUseScript string                 `mapstructure:"custom_post_tool_use_script" yaml:"custom_post_tool_use_script,omitempty"`
 	EvidenceGate            EvidenceGateHookConfig `mapstructure:"evidence_gate" yaml:"evidence_gate,omitempty"`
 	OperatorControls        OperatorControlsConfig `mapstructure:"operator_controls" yaml:"operator_controls,omitempty"`
+	Memory                  MemoryHookConfig       `mapstructure:"memory" yaml:"memory,omitempty"`
 }
 
 // EvidenceGateHookConfig opts into the evidence-read gate, a
@@ -54,6 +55,32 @@ type OperatorControlsConfig struct {
 	KillSwitchFile    string `mapstructure:"kill_switch_file" yaml:"kill_switch_file,omitempty"`
 	SteerEnabled      bool   `mapstructure:"steer_enabled" yaml:"steer_enabled"`
 	SteerFile         string `mapstructure:"steer_file" yaml:"steer_file,omitempty"`
+}
+
+// MemoryHookConfig opts into adb's namespaced vector-memory subsystem.
+// When Enabled is true, hooks may auto-index ticket knowledge and
+// session transcripts, and PreToolUse may surface "similar work" hints.
+// The store itself is always reachable via `adb memory …` regardless of
+// this flag; Enabled governs only the hook-driven auto-indexing and
+// hints.
+//
+// Defaults to disabled for backward compatibility. See
+// .wiki/concepts/Vector Memory in adb.md on the consumer monorepo.
+type MemoryHookConfig struct {
+	Enabled  bool               `mapstructure:"enabled" yaml:"enabled"`
+	DBPath   string             `mapstructure:"db_path" yaml:"db_path,omitempty"`
+	Embedder MemoryEmbedderConf `mapstructure:"embedder" yaml:"embedder"`
+}
+
+// MemoryEmbedderConf describes which embedding provider the memory
+// subsystem should use when opened via config. Provider ∈ {fake, openai,
+// ollama}. APIKey supports `$ENV_VAR` interpolation.
+type MemoryEmbedderConf struct {
+	Provider string `mapstructure:"provider" yaml:"provider"`
+	Model    string `mapstructure:"model" yaml:"model,omitempty"`
+	Endpoint string `mapstructure:"endpoint" yaml:"endpoint,omitempty"`
+	APIKey   string `mapstructure:"api_key" yaml:"api_key,omitempty"`
+	Dim      int    `mapstructure:"dim" yaml:"dim,omitempty"`
 }
 
 // CLIAliasConfig holds CLI alias definitions

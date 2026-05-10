@@ -1,11 +1,13 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/valter-silva-au/ai-dev-brain/internal/hooks"
 )
@@ -45,11 +47,31 @@ type OperatorConfig struct {
 	SteerFile         string
 }
 
+// MemoryIndexer is the minimal surface the HookEngine needs from the
+// vector-memory subsystem. It's an interface (not a concrete
+// *memory.SQLiteStore) so tests can inject a fake, and so HookEngine
+// doesn't import internal/memory (which would create a long import
+// chain through SQLite into core). The real wiring happens in app.go
+// where both packages are already stitched together.
+type MemoryIndexer interface {
+	Upsert(ctx context.Context, ns, key, content string, meta map[string]string) error
+}
+
+// MemoryHookConfig configures how the HookEngine uses the memory
+// subsystem. Enabled == false means no auto-indexing and no similar-
+// work hints, regardless of any non-nil Indexer (so disabling at config
+// level guarantees zero writes).
+type MemoryHookConfig struct {
+	Enabled bool
+	Indexer MemoryIndexer
+}
+
 // HookEngineOptions carries opt-in behaviours for HookEngine. Zero value
 // is the legacy behaviour: no cwc-long-running-agents features active.
 type HookEngineOptions struct {
 	Evidence EvidenceGateConfig
 	Operator OperatorConfig
+	Memory   MemoryHookConfig
 }
 
 // operatorWithDefaults fills unset file names with the conventional
@@ -322,7 +344,58 @@ func (he *HookEngine) ProcessTaskCompleted(event *hooks.TaskCompletedEvent) erro
 		fmt.Fprintf(os.Stderr, "Warning: knowledge extraction failed: %v\n", err)
 	}
 
+	// Auto-index the task's knowledge.yaml + notes into vector memory.
+	// Non-blocking: any failure logs and continues.
+	he.indexTaskIntoMemory(event.TaskID)
+
 	return nil
+}
+
+// indexSessionIntoMemory upserts a captured transcript into the
+// vector-memory namespace sessions/<session-id>. No-op when memory is
+// disabled, indexer is nil, or the session id / transcript is empty.
+func (he *HookEngine) indexSessionIntoMemory(sessionID, transcript string) {
+	if !he.opts.Memory.Enabled || he.opts.Memory.Indexer == nil {
+		return
+	}
+	if sessionID == "" || transcript == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	ns := "sessions/" + sessionID
+	meta := map[string]string{"source": "session-end"}
+	if err := he.opts.Memory.Indexer.Upsert(ctx, ns, "transcript", transcript, meta); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: memory auto-index %s/transcript: %v\n", ns, err)
+	}
+}
+
+// indexTaskIntoMemory reads knowledge.yaml and notes.md from the ticket
+// directory and upserts them into the vector-memory namespace
+// tickets/<task-id>. No-op when memory is disabled or the indexer is
+// nil. All errors are logged (non-blocking) so quality-gate success is
+// never conflated with memory health.
+func (he *HookEngine) indexTaskIntoMemory(taskID string) {
+	if !he.opts.Memory.Enabled || he.opts.Memory.Indexer == nil || taskID == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	ns := "tickets/" + taskID
+	meta := map[string]string{"source": "task-completed"}
+
+	taskDir := filepath.Join(he.basePath, "tickets", taskID)
+	for _, fname := range []string{"knowledge.yaml", "notes.md", "context.md"} {
+		path := filepath.Join(taskDir, fname)
+		data, err := os.ReadFile(path)
+		if err != nil || len(data) == 0 {
+			continue
+		}
+		key := fname
+		if err := he.opts.Memory.Indexer.Upsert(ctx, ns, key, string(data), meta); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: memory auto-index %s/%s: %v\n", ns, key, err)
+		}
+	}
 }
 
 // ProcessSessionEnd handles SessionEnd hooks
@@ -332,7 +405,9 @@ func (he *HookEngine) ProcessSessionEnd(event *hooks.SessionEndEvent) error {
 	}
 
 	// Capture transcript if available
+	var transcriptStr string
 	if transcript, ok := event.Metadata["transcript"].(string); ok {
+		transcriptStr = transcript
 		taskID := he.getCurrentTaskID()
 		if taskID != "" {
 			taskDir := filepath.Join(he.basePath, "tickets", taskID)
@@ -341,6 +416,10 @@ func (he *HookEngine) ProcessSessionEnd(event *hooks.SessionEndEvent) error {
 			}
 		}
 	}
+
+	// Auto-index the transcript into vector memory under
+	// sessions/<session-id>. Non-blocking: failures log and continue.
+	he.indexSessionIntoMemory(event.SessionID, transcriptStr)
 
 	// Update context.md with session summary
 	if err := he.updateContextOnSessionEnd(event); err != nil {

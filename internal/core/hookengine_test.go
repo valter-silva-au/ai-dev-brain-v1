@@ -1,13 +1,44 @@
 package core
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/valter-silva-au/ai-dev-brain/internal/hooks"
 )
+
+// fakeIndexer is a test double for MemoryIndexer that records every
+// Upsert call for later assertions.
+type fakeIndexer struct {
+	mu    sync.Mutex
+	calls []fakeIndexerCall
+}
+
+type fakeIndexerCall struct {
+	Namespace string
+	Key       string
+	Content   string
+	Meta      map[string]string
+}
+
+func (f *fakeIndexer) Upsert(_ context.Context, ns, key, content string, meta map[string]string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, fakeIndexerCall{Namespace: ns, Key: key, Content: content, Meta: meta})
+	return nil
+}
+
+func (f *fakeIndexer) Calls() []fakeIndexerCall {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]fakeIndexerCall, len(f.calls))
+	copy(out, f.calls)
+	return out
+}
 
 func TestHookEngine_PreventRecursion(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "hookengine-test-*")
@@ -833,4 +864,108 @@ func TestHookEngine_GetCurrentTaskID(t *testing.T) {
 		// in the test environment, so we just ensure it doesn't panic
 		_ = engine.getCurrentTaskID()
 	})
+}
+
+func TestHookEngine_MemoryIndex_DisabledByDefault(t *testing.T) {
+	tmp := t.TempDir()
+	fake := &fakeIndexer{}
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Memory: MemoryHookConfig{Enabled: false, Indexer: fake}, // Enabled=false
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	engine.indexTaskIntoMemory("TASK-00001")
+	engine.indexSessionIntoMemory("S-00001", "some transcript content")
+
+	if got := len(fake.Calls()); got != 0 {
+		t.Errorf("expected no indexer calls when disabled, got %d: %v", got, fake.Calls())
+	}
+}
+
+func TestHookEngine_MemoryIndex_TaskCompletedIndexesKnowledgeAndNotes(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Lay down a realistic ticket dir.
+	taskID := "TASK-00007"
+	taskDir := filepath.Join(tmp, "tickets", taskID)
+	if err := os.MkdirAll(taskDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	const knowledge = "- decision: chose SQLite+HNSW for memory\n- learning: always use deterministic RNG in tests\n"
+	const notes = "# Notes\n\nShipping Stage 3 of the plan.\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "knowledge.yaml"), []byte(knowledge), 0o644); err != nil {
+		t.Fatalf("write knowledge: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(taskDir, "notes.md"), []byte(notes), 0o644); err != nil {
+		t.Fatalf("write notes: %v", err)
+	}
+
+	fake := &fakeIndexer{}
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Memory: MemoryHookConfig{Enabled: true, Indexer: fake},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	engine.indexTaskIntoMemory(taskID)
+
+	calls := fake.Calls()
+	if len(calls) != 2 {
+		t.Fatalf("expected 2 indexer calls (knowledge.yaml + notes.md), got %d: %v", len(calls), calls)
+	}
+	wantNS := "tickets/" + taskID
+	gotKeys := map[string]string{}
+	for _, c := range calls {
+		if c.Namespace != wantNS {
+			t.Errorf("wrong namespace: got %q, want %q", c.Namespace, wantNS)
+		}
+		gotKeys[c.Key] = c.Content
+	}
+	if !strings.Contains(gotKeys["knowledge.yaml"], "SQLite+HNSW") {
+		t.Errorf("knowledge content missing expected marker: %q", gotKeys["knowledge.yaml"])
+	}
+	if !strings.Contains(gotKeys["notes.md"], "Shipping Stage 3") {
+		t.Errorf("notes content missing expected marker: %q", gotKeys["notes.md"])
+	}
+}
+
+func TestHookEngine_MemoryIndex_SessionEndIndexesTranscript(t *testing.T) {
+	tmp := t.TempDir()
+	fake := &fakeIndexer{}
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Memory: MemoryHookConfig{Enabled: true, Indexer: fake},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	engine.indexSessionIntoMemory("S-20260511", "User: start\nAssistant: Did the work\nUser: thanks")
+
+	calls := fake.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("expected 1 indexer call, got %d: %v", len(calls), calls)
+	}
+	if calls[0].Namespace != "sessions/S-20260511" {
+		t.Errorf("wrong namespace: got %q", calls[0].Namespace)
+	}
+	if calls[0].Key != "transcript" {
+		t.Errorf("wrong key: got %q", calls[0].Key)
+	}
+	if !strings.Contains(calls[0].Content, "Did the work") {
+		t.Errorf("content missing expected marker: %q", calls[0].Content)
+	}
+}
+
+func TestHookEngine_MemoryIndex_EmptyInputsAreNoOps(t *testing.T) {
+	tmp := t.TempDir()
+	fake := &fakeIndexer{}
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Memory: MemoryHookConfig{Enabled: true, Indexer: fake},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	engine.indexTaskIntoMemory("")                 // empty task ID
+	engine.indexSessionIntoMemory("", "transcript") // empty session ID
+	engine.indexSessionIntoMemory("S-1", "")        // empty transcript
+
+	if got := len(fake.Calls()); got != 0 {
+		t.Errorf("expected no calls for empty inputs, got %d: %v", got, fake.Calls())
+	}
 }

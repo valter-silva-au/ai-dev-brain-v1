@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"golang.org/x/sys/unix"
 )
 
 // TaskIDGenerator defines the interface for generating task IDs
@@ -55,12 +53,14 @@ func (g *FileTaskIDGenerator) GenerateTaskID() (string, error) {
 	}
 	defer file.Close()
 
-	// Acquire exclusive lock (flock) - blocks until lock is available
-	// This provides cross-process safety
-	if err := unix.Flock(int(file.Fd()), unix.LOCK_EX); err != nil {
+	// Acquire exclusive lock - blocks until lock is available
+	// This provides cross-process safety. Implementation is platform-specific
+	// (flock on Unix, LockFileEx on Windows) — see flock_{unix,windows}.go.
+	unlock, err := lockFile(file)
+	if err != nil {
 		return "", fmt.Errorf("failed to acquire file lock: %w", err)
 	}
-	defer unix.Flock(int(file.Fd()), unix.LOCK_UN) // Release lock
+	defer unlock()
 
 	// Read current counter value
 	counter, err := g.readCounter(file)

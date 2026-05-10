@@ -3,6 +3,7 @@ package core
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/valter-silva-au/ai-dev-brain/internal/hooks"
@@ -172,6 +173,204 @@ func TestHookEngine_ProcessPreToolUse(t *testing.T) {
 			t.Errorf("ProcessPreToolUse() error = %v, want nil for notes.go.sum", err)
 		}
 	})
+}
+
+func TestHookEngine_EvidenceGate_DisabledByDefault(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "evidence-default-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngine(tmp) // zero options -> gate off
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// A write that would otherwise be gated must pass when the gate is off.
+	event := &hooks.PreToolUseEvent{
+		ToolName: "Write",
+		Parameters: map[string]interface{}{
+			"file_path": "test-results.json",
+		},
+	}
+	if err := engine.ProcessPreToolUse(event); err != nil {
+		t.Errorf("ProcessPreToolUse() with gate disabled should not block, got %v", err)
+	}
+}
+
+func TestHookEngine_EvidenceGate_BlocksWriteWithoutRead(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "evidence-block-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Evidence: EvidenceGateConfig{
+			Enabled:      true,
+			WritePaths:   []string{"test-results.json"},
+			ReadPatterns: []string{"*.png"},
+		},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	event := &hooks.PreToolUseEvent{
+		ToolName: "Write",
+		Parameters: map[string]interface{}{
+			"file_path": "test-results.json",
+		},
+	}
+	err = engine.ProcessPreToolUse(event)
+	if err == nil {
+		t.Fatalf("ProcessPreToolUse() expected block, got nil")
+	}
+	if !strings.Contains(err.Error(), "evidence-gate") {
+		t.Errorf("expected error to mention evidence-gate, got %v", err)
+	}
+}
+
+func TestHookEngine_EvidenceGate_AllowsWriteAfterMatchingRead(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "evidence-pass-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Evidence: EvidenceGateConfig{
+			Enabled:      true,
+			WritePaths:   []string{"test-results.json"},
+			ReadPatterns: []string{"*.png"},
+		},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	readEvt := &hooks.PreToolUseEvent{
+		ToolName: "Read",
+		Parameters: map[string]interface{}{
+			"file_path": "screenshots/feature-1.png",
+		},
+	}
+	if err := engine.ProcessPreToolUse(readEvt); err != nil {
+		t.Fatalf("Read event should not error, got %v", err)
+	}
+
+	writeEvt := &hooks.PreToolUseEvent{
+		ToolName: "Write",
+		Parameters: map[string]interface{}{
+			"file_path": "test-results.json",
+		},
+	}
+	if err := engine.ProcessPreToolUse(writeEvt); err != nil {
+		t.Errorf("Write after matching Read should pass, got %v", err)
+	}
+}
+
+func TestHookEngine_EvidenceGate_UnrelatedWritesUnaffected(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "evidence-unrelated-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Evidence: EvidenceGateConfig{
+			Enabled:      true,
+			WritePaths:   []string{"test-results.json"},
+			ReadPatterns: []string{"*.png"},
+		},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Writing an unrelated file (not in WritePaths) must pass regardless
+	// of evidence state.
+	event := &hooks.PreToolUseEvent{
+		ToolName: "Write",
+		Parameters: map[string]interface{}{
+			"file_path": "main.go",
+		},
+	}
+	if err := engine.ProcessPreToolUse(event); err != nil {
+		t.Errorf("unrelated Write should pass, got %v", err)
+	}
+}
+
+func TestHookEngine_EvidenceGate_WindowsBackslashPathsMatch(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "evidence-win-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Evidence: EvidenceGateConfig{
+			Enabled:      true,
+			WritePaths:   []string{"test-results.json"},
+			ReadPatterns: []string{"*.png"},
+		},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Claude Code on Windows can pass backslash file_path values.
+	readEvt := &hooks.PreToolUseEvent{
+		ToolName: "Read",
+		Parameters: map[string]interface{}{
+			"file_path": `screenshots\feature-1.png`,
+		},
+	}
+	if err := engine.ProcessPreToolUse(readEvt); err != nil {
+		t.Fatalf("Read with backslash path should not error, got %v", err)
+	}
+
+	writeEvt := &hooks.PreToolUseEvent{
+		ToolName: "Write",
+		Parameters: map[string]interface{}{
+			"file_path": "test-results.json",
+		},
+	}
+	if err := engine.ProcessPreToolUse(writeEvt); err != nil {
+		t.Errorf("Write after backslash-path Read should pass, got %v", err)
+	}
+}
+
+func TestHookEngine_EvidenceGate_ClearedOnSessionEnd(t *testing.T) {
+	tmp, err := os.MkdirTemp("", "evidence-cleared-*")
+	if err != nil {
+		t.Fatalf("MkdirTemp: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	engine := NewHookEngineWithOptions(tmp, HookEngineOptions{
+		Evidence: EvidenceGateConfig{
+			Enabled:      true,
+			WritePaths:   []string{"test-results.json"},
+			ReadPatterns: []string{"*.png"},
+		},
+	})
+	os.Unsetenv("ADB_HOOK_ACTIVE")
+
+	// Record a read in session 1.
+	_ = engine.ProcessPreToolUse(&hooks.PreToolUseEvent{
+		ToolName: "Read",
+		Parameters: map[string]interface{}{
+			"file_path": "screenshots/a.png",
+		},
+	})
+
+	// End the session.
+	if err := engine.ProcessSessionEnd(&hooks.SessionEndEvent{SessionID: "S1"}); err != nil {
+		t.Fatalf("ProcessSessionEnd error = %v", err)
+	}
+
+	// The next session must re-block until a fresh Read arrives.
+	err = engine.ProcessPreToolUse(&hooks.PreToolUseEvent{
+		ToolName: "Write",
+		Parameters: map[string]interface{}{
+			"file_path": "test-results.json",
+		},
+	})
+	if err == nil {
+		t.Errorf("Write in new session without fresh Read should block, got nil")
+	}
 }
 
 func TestNormalisePath(t *testing.T) {

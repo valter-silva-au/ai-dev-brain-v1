@@ -10,17 +10,50 @@ import (
 	"github.com/valter-silva-au/ai-dev-brain/internal/hooks"
 )
 
+// EvidenceGateConfig opts the HookEngine into the evidence-read gate.
+// When Enabled is true, the gate:
+//   - records Read tool calls whose file_path matches any ReadPattern
+//     to an append-only tracker at basePath/.adb_evidence_reads,
+//   - blocks Write/Edit tool calls whose file_path matches any WritePath
+//     unless a matching ReadPattern entry already exists in the tracker.
+//
+// Paths and patterns use filepath.Match semantics (*, ?, [range]); they
+// do not support recursive `**`. Matching is done on the forward-slash
+// form of the input path, so both `screenshots/foo.png` and
+// `screenshots\foo.png` match `screenshots/*.png`.
+type EvidenceGateConfig struct {
+	Enabled       bool
+	WritePaths    []string
+	ReadPatterns  []string
+}
+
+// HookEngineOptions carries opt-in behaviours for HookEngine. Zero value
+// is the legacy behaviour: no cwc-long-running-agents features active.
+type HookEngineOptions struct {
+	Evidence EvidenceGateConfig
+}
+
 // HookEngine processes Claude Code hook events with hybrid shell/Go architecture
 type HookEngine struct {
 	basePath string
 	tracker  *hooks.ChangeTracker
+	evidence *hooks.EvidenceTracker
+	opts     HookEngineOptions
 }
 
-// NewHookEngine creates a new hook engine
+// NewHookEngine creates a new hook engine with legacy options.
+// Equivalent to NewHookEngineWithOptions(basePath, HookEngineOptions{}).
 func NewHookEngine(basePath string) *HookEngine {
+	return NewHookEngineWithOptions(basePath, HookEngineOptions{})
+}
+
+// NewHookEngineWithOptions creates a hook engine with explicit options.
+func NewHookEngineWithOptions(basePath string, opts HookEngineOptions) *HookEngine {
 	return &HookEngine{
 		basePath: basePath,
 		tracker:  hooks.NewChangeTracker(basePath),
+		evidence: hooks.NewEvidenceTracker(basePath),
+		opts:     opts,
 	}
 }
 
@@ -47,17 +80,74 @@ func (he *HookEngine) ProcessPreToolUse(event *hooks.PreToolUseEvent) error {
 		return nil
 	}
 
+	filePath, hasFilePath := event.Parameters["file_path"].(string)
+	normalised := ""
+	if hasFilePath {
+		normalised = normalisePath(filePath)
+	}
+
 	// Block edits to vendor/ and go.sum
 	if event.ToolName == "Edit" || event.ToolName == "Write" {
-		if filePath, ok := event.Parameters["file_path"].(string); ok {
-			normalised := normalisePath(filePath)
+		if hasFilePath {
 			if strings.Contains(normalised, "/vendor/") || strings.HasSuffix(normalised, "/go.sum") || normalised == "go.sum" {
 				return fmt.Errorf("blocked: modifications to vendor/ and go.sum are not allowed")
 			}
 		}
 	}
 
+	// Evidence-read gate: record matching reads; block writes to guarded
+	// paths that have no matching read on record.
+	if he.opts.Evidence.Enabled && hasFilePath {
+		if event.ToolName == "Read" {
+			if matchesAny(normalised, he.opts.Evidence.ReadPatterns) {
+				if err := he.evidence.Record(normalised); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to record evidence read: %v\n", err)
+				}
+			}
+		}
+		if event.ToolName == "Edit" || event.ToolName == "Write" {
+			if matchesAny(normalised, he.opts.Evidence.WritePaths) {
+				if !he.hasMatchingEvidence() {
+					return fmt.Errorf("blocked: writing to %q requires a prior Read of a file matching one of %v (evidence-gate)", filePath, he.opts.Evidence.ReadPatterns)
+				}
+			}
+		}
+	}
+
 	return nil
+}
+
+// matchesAny reports whether path matches any of the filepath.Match
+// patterns. Invalid patterns are treated as non-matches (they surface
+// in tests).
+func matchesAny(path string, patterns []string) bool {
+	for _, p := range patterns {
+		if matched, err := filepath.Match(p, path); err == nil && matched {
+			return true
+		}
+		// Also try matching just the basename, so callers can write
+		// `*.png` without worrying about leading directories.
+		if matched, err := filepath.Match(p, filepath.Base(path)); err == nil && matched {
+			return true
+		}
+	}
+	return false
+}
+
+// hasMatchingEvidence reports whether any previously-recorded evidence
+// read matches one of the configured ReadPatterns. Used by the
+// evidence-read gate.
+func (he *HookEngine) hasMatchingEvidence() bool {
+	reads, err := he.evidence.Reads()
+	if err != nil || len(reads) == 0 {
+		return false
+	}
+	for _, r := range reads {
+		if matchesAny(r, he.opts.Evidence.ReadPatterns) {
+			return true
+		}
+	}
+	return false
 }
 
 // ProcessPostToolUse handles PostToolUse hooks - non-blocking actions
@@ -172,6 +262,13 @@ func (he *HookEngine) ProcessSessionEnd(event *hooks.SessionEndEvent) error {
 	// Update context.md with session summary
 	if err := he.updateContextOnSessionEnd(event); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to update context: %v\n", err)
+	}
+
+	// Clear the evidence-read tracker at session boundary. Safe even
+	// when the evidence gate is disabled; Clear is a no-op if the file
+	// does not exist.
+	if err := he.evidence.Clear(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to clear evidence tracker: %v\n", err)
 	}
 
 	return nil

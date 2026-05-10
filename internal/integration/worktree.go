@@ -67,8 +67,11 @@ func (m *DefaultGitWorktreeManager) NormalizeRepoPath(repoPath string) (string, 
 		return "", fmt.Errorf("repoPath cannot be empty")
 	}
 
-	// Handle local paths (relative or absolute)
-	if strings.HasPrefix(repoPath, "/") || strings.HasPrefix(repoPath, "./") || strings.HasPrefix(repoPath, "../") {
+	// Handle local paths (relative or absolute). filepath.IsAbs is OS-aware
+	// (recognises Windows drive letters and UNC paths in addition to `/`),
+	// so a repo path like `C:\Users\me\repo` is treated as local on Windows
+	// rather than falling through to the URL / platform-path branches below.
+	if filepath.IsAbs(repoPath) || strings.HasPrefix(repoPath, "./") || strings.HasPrefix(repoPath, "../") {
 		return repoPath, nil
 	}
 
@@ -128,9 +131,12 @@ func (m *DefaultGitWorktreeManager) CreateWorktree(taskID, repoPath, baseBranch 
 		return "", fmt.Errorf("failed to normalize repo path: %w", err)
 	}
 
-	// Determine if this is a local path or remote repo
+	// Determine if this is a local path or remote repo. Using filepath.IsAbs
+	// so Windows absolute paths (drive letters, UNC) are kept as-is rather
+	// than being joined under `basePath/repos/` — that join produces invalid
+	// paths like `workspace\repos\C:\Users\...` which git cannot chdir into.
 	var repoDir string
-	if strings.HasPrefix(normalizedPath, "/") || strings.HasPrefix(normalizedPath, "./") || strings.HasPrefix(normalizedPath, "../") {
+	if filepath.IsAbs(normalizedPath) || strings.HasPrefix(normalizedPath, "./") || strings.HasPrefix(normalizedPath, "../") {
 		// Local path - use as-is
 		repoDir = normalizedPath
 	} else {

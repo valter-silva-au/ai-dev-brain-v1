@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -63,6 +64,17 @@ func TestNormalizeRepoPath(t *testing.T) {
 			name:     "Relative parent path",
 			input:    "../parent/repo",
 			expected: "../parent/repo",
+			wantErr:  false,
+		},
+		{
+			// Absolute Windows path. On Windows, filepath.IsAbs returns
+			// true so the early-return path is taken. On Unix, IsAbs is
+			// false but none of the URL/SSH prefixes match, so the default
+			// branch still returns the input unchanged — making the assert
+			// pass identically on all three OSes.
+			name:     "Absolute Windows path",
+			input:    `C:\Users\user\repos\myrepo`,
+			expected: `C:\Users\user\repos\myrepo`,
 			wantErr:  false,
 		},
 		{
@@ -186,6 +198,57 @@ func TestCreateWorktreeLocalRepo(t *testing.T) {
 	readmeInWorktree := filepath.Join(worktreePath, "README.md")
 	if _, err := os.Stat(readmeInWorktree); os.IsNotExist(err) {
 		t.Errorf("README.md does not exist in worktree: %s", readmeInWorktree)
+	}
+}
+
+// TestCreateWorktree_WindowsAbsoluteRepoPath is a regression test for the
+// pre-existing Windows bug where absolute Windows repoPath values (like
+// `C:\Users\...\repo`) were treated as remote repo paths and concatenated
+// under `basePath/repos/`, producing invalid paths like
+// `workspace\repos\C:\Users\...` that git cannot chdir into.
+//
+// The fix at internal/integration/worktree.go lines 71 and 133 swaps
+// `strings.HasPrefix(p, "/")` for `filepath.IsAbs(p)` so Windows drive-
+// letter paths are correctly recognised as absolute local paths.
+func TestCreateWorktree_WindowsAbsoluteRepoPath(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows-only regression test — filepath.IsAbs semantics differ per OS.")
+	}
+
+	tempDir := t.TempDir()
+
+	// Init a git repo at an absolute Windows path (t.TempDir returns one
+	// on Windows by construction: `C:\Users\...\TempN\TestN\001`).
+	repoDir := filepath.Join(tempDir, "test-repo")
+	if err := os.MkdirAll(repoDir, 0o755); err != nil {
+		t.Fatalf("Failed to create repo directory: %v", err)
+	}
+	setupGitRepo(t, repoDir)
+
+	workBase := filepath.Join(tempDir, "workspace")
+	manager := NewGitWorktreeManager(workBase)
+
+	taskID := "TASK-WIN-001"
+	worktreePath, err := manager.CreateWorktree(taskID, repoDir, "main")
+	if err != nil {
+		t.Fatalf("CreateWorktree() with Windows absolute repoPath failed: %v", err)
+	}
+
+	// The worktree must live under workBase/work/<taskID>, with no
+	// embedded drive letter in the middle of the path.
+	expectedPath := filepath.Join(workBase, "work", taskID)
+	if worktreePath != expectedPath {
+		t.Errorf("Expected worktree at %s, got %s", expectedPath, worktreePath)
+	}
+
+	// Sanity: repoDir's drive letter must NOT appear inside worktreePath
+	// (guards against the specific bug shape `workspace\repos\C:\...`).
+	if strings.Contains(worktreePath, ":") && strings.Index(worktreePath, ":") != 1 {
+		t.Errorf("worktreePath contains embedded drive letter after position 1: %s", worktreePath)
+	}
+
+	if _, err := os.Stat(worktreePath); os.IsNotExist(err) {
+		t.Errorf("Worktree directory does not exist: %s", worktreePath)
 	}
 }
 

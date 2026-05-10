@@ -28,6 +28,7 @@ func NewTaskCmd() *cobra.Command {
 		newTaskStatusCmd(),
 		newTaskPriorityCmd(),
 		newTaskUpdateCmd(),
+		newTaskRunWithRufloCmd(),
 	)
 
 	return taskCmd

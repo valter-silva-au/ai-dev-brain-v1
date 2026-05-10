@@ -357,8 +357,23 @@ func (he *HookEngine) ProcessSessionEnd(event *hooks.SessionEndEvent) error {
 	return nil
 }
 
-// formatGoFile runs gofmt on a Go file
+// formatGoFile runs gofmt on a Go file. If the file does not exist at
+// the given path (e.g. a Git-Bash-style `/tmp/...` path fed on Windows,
+// which Go's os.* resolves natively), log a clear warning and return
+// nil rather than letting gofmt fail with an unhelpful exit-2 error.
+// Real Claude Code hook events carry Windows-form paths where this
+// code path works as-is; the guard just makes the test/script failure
+// mode honest on mismatched-path-convention inputs.
 func (he *HookEngine) formatGoFile(filePath string) error {
+	if _, err := os.Stat(filePath); err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr,
+				"Warning: skipping gofmt: file_path %q does not resolve on this platform\n",
+				filePath)
+			return nil
+		}
+		return fmt.Errorf("stat %q before gofmt: %w", filePath, err)
+	}
 	cmd := exec.Command("gofmt", "-w", filePath)
 	cmd.Env = append(os.Environ(), "ADB_HOOK_ACTIVE=1")
 	return cmd.Run()

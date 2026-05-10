@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/valter-silva-au/ai-dev-brain/internal"
@@ -222,6 +223,50 @@ func TestTaskCreateValidation(t *testing.T) {
 				t.Errorf("Expected no error but got: %v", err)
 			}
 		})
+	}
+}
+
+// TestTaskCreate_TitleNotDoubleWrapped is a regression test for a bug
+// where `adb task create` stored the title as `[feat] branch` and the
+// renderer at task.go line ~351 re-wrapped it as `[feat] [feat] branch`.
+// Titles should now be stored as the raw branch name.
+func TestTaskCreate_TitleNotDoubleWrapped(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	app, err := internal.NewApp(tmpDir)
+	if err != nil {
+		t.Fatalf("Failed to create app: %v", err)
+	}
+	defer app.Cleanup()
+	App = app
+
+	branch := "double-wrap-test"
+	cmd := newTaskCreateCmd()
+	cmd.SetArgs([]string{branch})
+	_ = cmd.Flags().Set("type", "feat")
+	_ = cmd.Flags().Set("priority", "P2")
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() failed: %v", err)
+	}
+
+	// Read backlog.yaml and assert the stored title is raw, not pre-wrapped.
+	backlogPath := filepath.Join(tmpDir, "backlog.yaml")
+	data, err := os.ReadFile(backlogPath)
+	if err != nil {
+		t.Fatalf("read backlog: %v", err)
+	}
+	content := string(data)
+
+	if !strings.Contains(content, "title: "+branch) {
+		t.Errorf("expected stored title to be raw branch %q, got backlog:\n%s", branch, content)
+	}
+	if strings.Contains(content, "[feat] "+branch) {
+		t.Errorf("stored title still contains the type prefix — renderer will double-wrap. backlog:\n%s", content)
 	}
 }
 

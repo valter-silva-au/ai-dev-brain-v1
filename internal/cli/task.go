@@ -87,9 +87,12 @@ func newTaskCreateCmd() *cobra.Command {
 				return fmt.Errorf("invalid priority: %s (must be P0, P1, P2, or P3)", priority)
 			}
 
-			// Create task options
+			// Create task options. Store the raw branch as the title;
+			// the type prefix (e.g. `[feat]`) is added by the renderer
+			// in `adb task status`. Pre-baking it here produced
+			// `[feat] [feat] branch` double-prefixes in the output.
 			opts := core.CreateTaskOpts{
-				Title:              fmt.Sprintf("[%s] %s", taskType, branch),
+				Title:              branch,
 				Description:        description,
 				AcceptanceCriteria: acceptance,
 				TaskType:           tt,

@@ -3,7 +3,6 @@ package core
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -296,9 +295,6 @@ func TestAIContextGenerator_WithDecisions(t *testing.T) {
 }
 
 func TestAIContextGenerator_WithSessions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Asserts forward-slash session paths in generated CLAUDE.md; AIContextGenerator emits backslash paths on Windows. Fix belongs in the generator (use filepath.ToSlash on output), not the test — tracked as a follow-up.")
-	}
 	tmpDir := t.TempDir()
 	setupTestEnvironment(t, tmpDir)
 

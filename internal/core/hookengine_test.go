@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -747,6 +748,126 @@ func TestHookEngine_FormatGoFile_NonExistentPath(t *testing.T) {
 	}
 	if !strings.Contains(output, "does not resolve") {
 		t.Errorf("expected 'does not resolve' in stderr, got %q", output)
+	}
+}
+
+// TestTranslateGitBashPath covers the Windows-only translation table.
+// Runs on all OSes so behaviour is stable in CI (the logic is pure
+// string manipulation; runtime.GOOS only guards whether Windows-ish
+// inputs are even tried upstream).
+func TestTranslateGitBashPath(t *testing.T) {
+	// Need TEMP set for the /tmp mapping. t.Setenv gives us a known
+	// value and restores automatically.
+	t.Setenv("TEMP", `C:\Windows\Temp`)
+
+	cases := []struct {
+		name string
+		in   string
+		want string
+		ok   bool
+	}{
+		{"empty is not a mount", "", "", false},
+		{"non-slash is not a mount", "C:\\foo.go", "", false},
+		{"relative is not a mount", "./foo.go", "", false},
+		{"/c/Users/valte/file.go", "/c/Users/valte/file.go", `C:\Users\valte\file.go`, true},
+		{"/d/Projects/x → D:\\Projects\\x", "/d/Projects/x", `D:\Projects\x`, true},
+		{"just /c/ → C:\\", "/c/", `C:\`, true},
+		{"/c alone → C:\\", "/c", `C:\`, true},
+		{"/tmp/foo.go → TEMP\\foo.go", "/tmp/foo.go", `C:\Windows\Temp\foo.go`, true},
+		{"/tmp alone → TEMP", "/tmp", `C:\Windows\Temp`, true},
+		// Multi-char first segment is NOT a drive letter.
+		{"/cmd/foo should not translate", "/cmd/foo", "", false},
+		{"/home/user not a Windows mount", "/home/user", "", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, ok := translateGitBashPath(c.in)
+			if ok != c.ok {
+				t.Errorf("ok = %v, want %v (got path %q)", ok, c.ok, got)
+			}
+			if ok && got != c.want {
+				t.Errorf("path = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// TestResolveFilePath_TranslatesGitBashOnWindows exercises the full
+// resolveFilePath path on Windows: the direct stat fails (path uses
+// Git-Bash mount form), translation maps it to the real file, and the
+// second stat succeeds.
+func TestResolveFilePath_TranslatesGitBashOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("translation path is Windows-only")
+	}
+
+	// Create a real file at a path we know the translation can reach.
+	// t.TempDir on Windows lives under %TEMP%\... so the /tmp → %TEMP%
+	// mapping in translateGitBashPath should find it.
+	tmpDir := t.TempDir()
+	realPath := filepath.Join(tmpDir, "sample.go")
+	if err := os.WriteFile(realPath, []byte("package main\n"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	// Compute the Git Bash form of realPath. On Windows, %TEMP% starts
+	// with `C:\...`, so the /c/... form is the most reliable target.
+	gitBashForm := "/" + strings.ToLower(string(realPath[0])) + filepath.ToSlash(realPath[2:])
+
+	resolved, err := resolveFilePath(gitBashForm)
+	if err != nil {
+		t.Fatalf("resolveFilePath(%q) err = %v", gitBashForm, err)
+	}
+	// Compare via filepath.Clean to normalise separators.
+	if filepath.Clean(resolved) != filepath.Clean(realPath) {
+		t.Errorf("resolved = %q, want %q (from input %q)", resolved, realPath, gitBashForm)
+	}
+}
+
+// TestResolveFilePath_PassesThroughExistingPath — happy path on all OSes.
+func TestResolveFilePath_PassesThroughExistingPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	realPath := filepath.Join(tmpDir, "here.go")
+	if err := os.WriteFile(realPath, []byte("package main\n"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	resolved, err := resolveFilePath(realPath)
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	if resolved != realPath {
+		t.Errorf("resolved = %q, want %q (unchanged)", resolved, realPath)
+	}
+}
+
+// TestFormatGoFile_TranslatesGitBashPath — the smoke test wiring all
+// of the above through HookEngine.formatGoFile. Create a real Go file
+// under t.TempDir, pass its Git-Bash form, assert gofmt succeeded
+// (evidenced by the indentation rewrite).
+func TestFormatGoFile_TranslatesGitBashPath(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Git Bash path translation only applies on Windows")
+	}
+	tmpDir := t.TempDir()
+	realPath := filepath.Join(tmpDir, "translate_me.go")
+	// Bad indentation on purpose — gofmt will rewrite with tab.
+	initial := "package main\n\nfunc main() {\nprintln(\"hi\")\n}\n"
+	if err := os.WriteFile(realPath, []byte(initial), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	gitBashForm := "/" + strings.ToLower(string(realPath[0])) + filepath.ToSlash(realPath[2:])
+	engine := NewHookEngine(tmpDir)
+	if err := engine.formatGoFile(gitBashForm); err != nil {
+		t.Fatalf("formatGoFile(%q) = %v", gitBashForm, err)
+	}
+
+	got, err := os.ReadFile(realPath)
+	if err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if !strings.Contains(string(got), "\tprintln") {
+		t.Errorf("gofmt did not run (no tab indent); content:\n%s", string(got))
 	}
 }
 

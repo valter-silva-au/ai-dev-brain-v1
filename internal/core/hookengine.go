@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -444,7 +445,8 @@ func (he *HookEngine) ProcessSessionEnd(event *hooks.SessionEndEvent) error {
 // code path works as-is; the guard just makes the test/script failure
 // mode honest on mismatched-path-convention inputs.
 func (he *HookEngine) formatGoFile(filePath string) error {
-	if _, err := os.Stat(filePath); err != nil {
+	resolved, err := resolveFilePath(filePath)
+	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Fprintf(os.Stderr,
 				"Warning: skipping gofmt: file_path %q does not resolve on this platform\n",
@@ -453,9 +455,84 @@ func (he *HookEngine) formatGoFile(filePath string) error {
 		}
 		return fmt.Errorf("stat %q before gofmt: %w", filePath, err)
 	}
-	cmd := exec.Command("gofmt", "-w", filePath)
+	cmd := exec.Command("gofmt", "-w", resolved)
 	cmd.Env = append(os.Environ(), "ADB_HOOK_ACTIVE=1")
 	return cmd.Run()
+}
+
+// resolveFilePath os.Stat's filePath and returns a usable, native path.
+// On Windows it also tries translating Git-Bash mount-style paths
+// (/c/Users/..., /tmp/...) into their native `C:\Users\...` form when
+// the direct path doesn't resolve — Claude Code's own Windows tool
+// events carry Windows-form paths, but scripts / tests / Git Bash
+// pipelines sometimes pass the mount form. Returns the original err
+// (usually os.ErrNotExist) if no translation works.
+func resolveFilePath(filePath string) (string, error) {
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath, nil
+	} else if !os.IsNotExist(err) {
+		return "", err
+	}
+	// On non-Windows, Git-Bash-style paths ARE native — no translation
+	// to try.
+	if runtime.GOOS != "windows" {
+		return "", os.ErrNotExist
+	}
+	translated, ok := translateGitBashPath(filePath)
+	if !ok {
+		return "", os.ErrNotExist
+	}
+	if _, err := os.Stat(translated); err == nil {
+		return translated, nil
+	}
+	return "", os.ErrNotExist
+}
+
+// translateGitBashPath maps Git Bash mount paths to Windows native form.
+// Handles two common shapes:
+//
+//   - `/c/Users/...`, `/d/Projects/...` → `C:\Users\...`, `D:\Projects\...`
+//     (Git Bash mounts drive letters as top-level single-letter dirs.)
+//   - `/tmp/...` → `%TEMP%\...` via the TEMP env var (or USERPROFILE\AppData
+//     \Local\Temp on Windows by convention).
+//
+// Returns (nativePath, true) on successful translation, ("", false)
+// when the input doesn't look like a mount path. Best-effort; a false
+// return just means "I don't know how to translate this; let the caller
+// fall back".
+func translateGitBashPath(p string) (string, bool) {
+	if p == "" || !strings.HasPrefix(p, "/") {
+		return "", false
+	}
+	// `/tmp/...` → `${TMP}\...`
+	if strings.HasPrefix(p, "/tmp/") || p == "/tmp" {
+		tmp := os.Getenv("TEMP")
+		if tmp == "" {
+			tmp = os.Getenv("TMP")
+		}
+		if tmp == "" {
+			return "", false
+		}
+		rest := strings.TrimPrefix(p, "/tmp")
+		return filepath.Join(tmp, filepath.FromSlash(rest)), true
+	}
+	// `/c/Users/...` → `C:\Users\...`. Drive letter is the first segment;
+	// must be exactly 1 alpha char to avoid matching `/cmd/...` style
+	// legitimate Unix paths.
+	parts := strings.SplitN(p, "/", 3) // ["", "c", "Users/..."]
+	if len(parts) >= 2 && len(parts[1]) == 1 && isAsciiAlpha(parts[1][0]) {
+		drive := strings.ToUpper(parts[1]) + ":"
+		rest := ""
+		if len(parts) == 3 {
+			rest = parts[2]
+		}
+		return filepath.Join(drive+string(filepath.Separator), filepath.FromSlash(rest)), true
+	}
+	return "", false
+}
+
+func isAsciiAlpha(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 // hasUncommittedChanges checks for uncommitted git changes

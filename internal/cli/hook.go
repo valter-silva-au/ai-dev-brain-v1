@@ -143,7 +143,7 @@ func newHookPreToolUseCmd() *cobra.Command {
 				return fmt.Errorf("app not initialized")
 			}
 
-			engine := core.NewHookEngine(App.BasePath)
+			engine := core.NewHookEngineWithOptions(App.BasePath, hookOptionsFromConfig())
 			if engine.PreventRecursion() {
 				return nil
 			}
@@ -175,7 +175,7 @@ func newHookPostToolUseCmd() *cobra.Command {
 				return fmt.Errorf("app not initialized")
 			}
 
-			engine := core.NewHookEngine(App.BasePath)
+			engine := core.NewHookEngineWithOptions(App.BasePath, hookOptionsFromConfig())
 			if engine.PreventRecursion() {
 				return nil
 			}
@@ -207,7 +207,7 @@ func newHookStopCmd() *cobra.Command {
 				return fmt.Errorf("app not initialized")
 			}
 
-			engine := core.NewHookEngine(App.BasePath)
+			engine := core.NewHookEngineWithOptions(App.BasePath, hookOptionsFromConfig())
 			if engine.PreventRecursion() {
 				return nil
 			}
@@ -234,7 +234,7 @@ func newHookTaskCompletedCmd() *cobra.Command {
 				return fmt.Errorf("app not initialized")
 			}
 
-			engine := core.NewHookEngine(App.BasePath)
+			engine := core.NewHookEngineWithOptions(App.BasePath, hookOptionsFromConfig())
 			if engine.PreventRecursion() {
 				return nil
 			}
@@ -266,7 +266,7 @@ func newHookSessionEndCmd() *cobra.Command {
 				return fmt.Errorf("app not initialized")
 			}
 
-			engine := core.NewHookEngine(App.BasePath)
+			engine := core.NewHookEngineWithOptions(App.BasePath, hookOptionsFromConfig())
 			if engine.PreventRecursion() {
 				return nil
 			}

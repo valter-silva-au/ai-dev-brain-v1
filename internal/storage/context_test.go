@@ -50,14 +50,8 @@ func TestFileContextManager_WriteContext(t *testing.T) {
 		t.Fatal("Context file was not created")
 	}
 
-	// Verify file permissions
-	info, err := os.Stat(contextPath)
-	if err != nil {
-		t.Fatalf("Failed to stat context file: %v", err)
-	}
-	if info.Mode().Perm() != 0o644 {
-		t.Errorf("Expected file permissions 0o644, got %o", info.Mode().Perm())
-	}
+	// Verify context file is present + owner-read/writable.
+	assertOwnerReadWritableFile(t, contextPath)
 
 	// Verify content
 	content, err := fcm.ReadContext("TASK-001")
@@ -195,14 +189,8 @@ func TestFileContextManager_WriteNotes(t *testing.T) {
 		t.Fatal("Notes file was not created")
 	}
 
-	// Verify file permissions
-	info, err := os.Stat(notesPath)
-	if err != nil {
-		t.Fatalf("Failed to stat notes file: %v", err)
-	}
-	if info.Mode().Perm() != 0o644 {
-		t.Errorf("Expected file permissions 0o644, got %o", info.Mode().Perm())
-	}
+	// Verify notes file is present + owner-read/writable.
+	assertOwnerReadWritableFile(t, notesPath)
 
 	// Verify content
 	content, err := fcm.ReadNotes("TASK-001")
@@ -328,16 +316,8 @@ func TestFileContextManager_TaskDirectoryCreation(t *testing.T) {
 
 	// Verify directory was created with correct permissions
 	taskDir := filepath.Join(tempDir, "TASK-001")
-	info, err := os.Stat(taskDir)
-	if err != nil {
-		t.Fatalf("Task directory was not created: %v", err)
-	}
-	if !info.IsDir() {
-		t.Error("Path is not a directory")
-	}
-	if info.Mode().Perm() != 0o755 {
-		t.Errorf("Expected directory permissions 0o755, got %o", info.Mode().Perm())
-	}
+	// Verify task directory is present + owner-accessible.
+	assertOwnerAccessibleDir(t, taskDir)
 }
 
 func TestFileContextManager_EmptyContent(t *testing.T) {

@@ -88,14 +88,9 @@ func TestFileBacklogManager_Save(t *testing.T) {
 		t.Fatal("File was not created")
 	}
 
-	// Verify file permissions
-	info, err := os.Stat(filePath)
-	if err != nil {
-		t.Fatalf("Failed to stat file: %v", err)
-	}
-	if info.Mode().Perm() != 0o644 {
-		t.Errorf("Expected file permissions 0o644, got %o", info.Mode().Perm())
-	}
+	// Verify file is present, regular, and owner-read/writable.
+	// Exact Unix 0o644 bits aren't portable — Windows synthesises 0o666.
+	assertOwnerReadWritableFile(t, filePath)
 
 	// Load and verify
 	loaded, err := fbm.Load()
@@ -120,18 +115,9 @@ func TestFileBacklogManager_Save_CreatesDirectory(t *testing.T) {
 		t.Fatalf("Save() failed: %v", err)
 	}
 
-	// Verify directory was created with correct permissions
-	dirPath := filepath.Dir(filePath)
-	info, err := os.Stat(dirPath)
-	if err != nil {
-		t.Fatalf("Directory was not created: %v", err)
-	}
-	if !info.IsDir() {
-		t.Error("Path is not a directory")
-	}
-	if info.Mode().Perm() != 0o755 {
-		t.Errorf("Expected directory permissions 0o755, got %o", info.Mode().Perm())
-	}
+	// Verify directory is present + owner-accessible. Exact Unix 0o755
+	// bits aren't portable; the contract is "owner can rwx it".
+	assertOwnerAccessibleDir(t, filepath.Dir(filePath))
 }
 
 func TestFileBacklogManager_AddTask(t *testing.T) {

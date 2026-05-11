@@ -568,16 +568,9 @@ func TestFileSessionStoreManager_DirectoryPermissions(t *testing.T) {
 		t.Fatalf("SaveSession() failed: %v", err)
 	}
 
-	// Note: TempDir creates with 0o700, so we check session directory instead
+	// Verify session directory is present + owner-accessible.
 	sessionDir := filepath.Join(tempDir, "S-00001")
-	sessionInfo, err := os.Stat(sessionDir)
-	if err != nil {
-		t.Fatalf("Failed to stat session directory: %v", err)
-	}
-
-	if sessionInfo.Mode().Perm() != 0o755 {
-		t.Errorf("Expected session directory permissions 0o755, got %o", sessionInfo.Mode().Perm())
-	}
+	assertOwnerAccessibleDir(t, sessionDir)
 }
 
 func TestFileSessionStoreManager_FilePermissions(t *testing.T) {
@@ -593,30 +586,13 @@ func TestFileSessionStoreManager_FilePermissions(t *testing.T) {
 		t.Fatalf("SaveSession() failed: %v", err)
 	}
 
-	// Check file permissions
-	files := []string{"session.yaml", "turns.yaml", "summary.md"}
-	for _, filename := range files {
-		filePath := filepath.Join(tempDir, "S-00001", filename)
-		info, err := os.Stat(filePath)
-		if err != nil {
-			t.Fatalf("Failed to stat %s: %v", filename, err)
-		}
-
-		if info.Mode().Perm() != 0o644 {
-			t.Errorf("Expected %s permissions 0o644, got %o", filename, info.Mode().Perm())
-		}
+	// Verify each session file is present + owner-read/writable.
+	for _, filename := range []string{"session.yaml", "turns.yaml", "summary.md"} {
+		assertOwnerReadWritableFile(t, filepath.Join(tempDir, "S-00001", filename))
 	}
 
-	// Check index file permissions
-	indexPath := filepath.Join(tempDir, "index.yaml")
-	indexInfo, err := os.Stat(indexPath)
-	if err != nil {
-		t.Fatalf("Failed to stat index.yaml: %v", err)
-	}
-
-	if indexInfo.Mode().Perm() != 0o644 {
-		t.Errorf("Expected index.yaml permissions 0o644, got %o", indexInfo.Mode().Perm())
-	}
+	// Verify index.yaml is present + owner-read/writable.
+	assertOwnerReadWritableFile(t, filepath.Join(tempDir, "index.yaml"))
 }
 
 func TestFileSessionStoreManager_SessionIndexSorting(t *testing.T) {

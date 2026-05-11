@@ -57,14 +57,8 @@ func TestFileCommunicationManager_SaveCommunication(t *testing.T) {
 		t.Errorf("Expected .md file, got %s", files[0].Name())
 	}
 
-	// Verify file permissions
-	info, err := os.Stat(filepath.Join(commDir, files[0].Name()))
-	if err != nil {
-		t.Fatalf("Failed to stat communication file: %v", err)
-	}
-	if info.Mode().Perm() != 0o644 {
-		t.Errorf("Expected file permissions 0o644, got %o", info.Mode().Perm())
-	}
+	// Verify file is present, regular, and owner-read/writable.
+	assertOwnerReadWritableFile(t, filepath.Join(commDir, files[0].Name()))
 }
 
 func TestFileCommunicationManager_SaveCommunication_NilCheck(t *testing.T) {
@@ -432,14 +426,7 @@ func TestFileCommunicationManager_DirectoryPermissions(t *testing.T) {
 		t.Fatalf("SaveCommunication() failed: %v", err)
 	}
 
-	// Verify communications directory permissions
+	// Verify communications directory is present + owner-accessible.
 	commDir := filepath.Join(tempDir, "TASK-001", "communications")
-	info, err := os.Stat(commDir)
-	if err != nil {
-		t.Fatalf("Failed to stat communications directory: %v", err)
-	}
-
-	if info.Mode().Perm() != 0o755 {
-		t.Errorf("Expected directory permissions 0o755, got %o", info.Mode().Perm())
-	}
+	assertOwnerAccessibleDir(t, commDir)
 }

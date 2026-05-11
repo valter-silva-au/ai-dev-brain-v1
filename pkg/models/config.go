@@ -115,6 +115,12 @@ type RepoConfig struct {
 	WorktreeBasePath string            `mapstructure:"worktree_base_path" yaml:"worktree_base_path,omitempty"`
 	AutoSync         bool              `mapstructure:"auto_sync" yaml:"auto_sync"`
 	CustomSettings   map[string]string `mapstructure:"custom_settings" yaml:"custom_settings,omitempty"`
+	// Hooks here are a repo-level override for the global HookConfig.
+	// Empty fields fall back to Global.Hooks (see
+	// internal/cli/hook_options.go::hookOptionsFromConfig). Lets a
+	// workspace enable evidence-gate / operator-controls / memory
+	// without editing ~/.taskconfig.
+	Hooks HookConfig `mapstructure:"hooks" yaml:"hooks,omitempty"`
 }
 
 // MergedConfig represents the combined configuration from global and repo configs

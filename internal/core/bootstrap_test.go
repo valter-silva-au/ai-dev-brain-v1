@@ -3,7 +3,6 @@ package core
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -600,9 +599,6 @@ func TestGenerateTaskContext(t *testing.T) {
 }
 
 func TestGenerateTaskContext_InvalidPath(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Uses Unix-style `/nonexistent/...` fixture; on Windows this path is interpreted relative to the current drive and may succeed. Fix belongs in a portable fixture — tracked as a follow-up.")
-	}
 	tm, err := NewEmbedTemplateManager(claude.FS)
 	if err != nil {
 		t.Fatalf("Failed to create template manager: %v", err)
@@ -613,8 +609,13 @@ func TestGenerateTaskContext_InvalidPath(t *testing.T) {
 		Title:  "Bad Path Test",
 	}
 
-	// Generate at non-writable path should fail
-	err = generateTaskContext("/nonexistent/path/that/doesnt/exist", tm, config)
+	// Use a path that's guaranteed-unusable on every supported OS.
+	// `\x00` is illegal in filenames on POSIX and Windows both, so
+	// os.MkdirAll / os.WriteFile uniformly fail — avoids the previous
+	// fixture's reliance on `/nonexistent/...` which Windows
+	// interprets relative to the current drive and might succeed.
+	invalidPath := filepath.Join(t.TempDir(), "invalid\x00path")
+	err = generateTaskContext(invalidPath, tm, config)
 	if err == nil {
 		t.Error("generateTaskContext() with invalid path should fail")
 	}

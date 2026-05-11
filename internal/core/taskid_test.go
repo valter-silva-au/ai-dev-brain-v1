@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -318,9 +317,6 @@ func TestGenerateTaskID_DirectoryCreation(t *testing.T) {
 }
 
 func TestGenerateTaskID_FilePermissions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Windows FS does not preserve Unix mode bits; os.Stat reports 0o666 regardless of the 0o644 supplied at Open. Real fix would assert writability instead of exact mode match — tracked as a follow-up.")
-	}
 	tempDir := t.TempDir()
 	counterFile := filepath.Join(tempDir, ".task_counter")
 
@@ -330,14 +326,29 @@ func TestGenerateTaskID_FilePermissions(t *testing.T) {
 		t.Fatalf("GenerateTaskID() failed: %v", err)
 	}
 
-	// Verify file permissions
+	// Assert the counter file exists and is readable+writable by the
+	// current user. Exact Unix mode bits (0o644) aren't portable:
+	// Windows synthesises 0o666 regardless of the mode supplied at
+	// Open time. Testing for usability rather than bit-exactness keeps
+	// the contract portable.
 	info, err := os.Stat(counterFile)
 	if err != nil {
 		t.Fatalf("Failed to stat counter file: %v", err)
 	}
-	if info.Mode().Perm() != 0o644 {
-		t.Errorf("Expected file permissions 0o644, got %o", info.Mode().Perm())
+	if info.Mode().Perm()&0o600 != 0o600 {
+		t.Errorf("counter file %q must be readable+writable by owner; got mode %o", counterFile, info.Mode().Perm())
 	}
+	// A regular file, not a directory or symlink.
+	if !info.Mode().IsRegular() {
+		t.Errorf("counter file %q should be a regular file; mode = %v", counterFile, info.Mode())
+	}
+	// Sanity: we can actually read from and append to it (proves the
+	// writability claim isn't just a mode-bit lie on Windows).
+	f, err := os.OpenFile(counterFile, os.O_RDWR|os.O_APPEND, 0o644)
+	if err != nil {
+		t.Fatalf("open for read+append: %v", err)
+	}
+	_ = f.Close()
 }
 
 func TestGenerateTaskID_EmptyCounterFile(t *testing.T) {

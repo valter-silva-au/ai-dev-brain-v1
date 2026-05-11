@@ -414,7 +414,11 @@ func (g *DefaultAIContextGenerator) generateRecentSessions() string {
 		}
 
 		relPath, _ := filepath.Rel(g.repoRoot, file)
-		sb.WriteString(fmt.Sprintf("### %s\n\n", relPath))
+		// Emit forward slashes so generated markdown is portable — a
+		// Windows-generated CLAUDE.md committed to git shouldn't
+		// surface `tickets\TASK-001\sessions\session.md` when all other
+		// consumers (wiki, diffs, LLMs) expect `/` separators.
+		sb.WriteString(fmt.Sprintf("### %s\n\n", filepath.ToSlash(relPath)))
 		sb.WriteString(strings.Join(lines, "\n"))
 		if len(strings.Split(string(content), "\n")) > 20 {
 			sb.WriteString("\n\n_[truncated]_\n")

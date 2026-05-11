@@ -324,9 +324,13 @@ func (m *DefaultGitWorktreeManager) ListWorktrees(repoPath string) ([]WorktreeIn
 		}
 
 		if strings.HasPrefix(line, "worktree ") {
-			// Start of a new worktree entry
+			// Start of a new worktree entry. Normalise the path via
+			// filepath.FromSlash so Windows callers comparing against
+			// filepath.Join-produced expectations don't get spurious
+			// mismatches — `git worktree list --porcelain` emits
+			// forward slashes even on Windows.
 			current = &WorktreeInfo{
-				Path: strings.TrimPrefix(line, "worktree "),
+				Path: filepath.FromSlash(strings.TrimPrefix(line, "worktree ")),
 			}
 		} else if strings.HasPrefix(line, "HEAD ") && current != nil {
 			current.Commit = strings.TrimPrefix(line, "HEAD ")

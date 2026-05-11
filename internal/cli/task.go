@@ -29,6 +29,7 @@ func NewTaskCmd() *cobra.Command {
 		newTaskPriorityCmd(),
 		newTaskUpdateCmd(),
 		newTaskRunWithRufloCmd(),
+		newTaskNormalizeTitlesCmd(),
 	)
 
 	return taskCmd

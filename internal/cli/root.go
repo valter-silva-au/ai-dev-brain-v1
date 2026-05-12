@@ -35,6 +35,8 @@ that integrates with git worktrees, Claude Code, and terminal environments.`,
 	rootCmd.AddCommand(NewServeCmd())
 	rootCmd.AddCommand(NewPromptCmd())
 	rootCmd.AddCommand(NewMemoryCmd())
+	rootCmd.AddCommand(NewReposCmd())
+	rootCmd.AddCommand(NewSchedulerCmd())
 
 	return rootCmd
 }
